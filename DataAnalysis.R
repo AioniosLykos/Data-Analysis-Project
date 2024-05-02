@@ -13,7 +13,17 @@ cal_Per_GrOfFat <- 9
 cal_Per_GrOfCarbs <- 4
 
 
-data <- FFdata_original %>% convert_to_numeric %>%
-  mutate(across(-c("Company", "Item"), ~ifelse(is.na(.) , 0, .))) %>%
+data <- FFdata_original %>%
+  mutate(across(-c("Company", "Item"), ~ifelse(is.na(.) , -1, .))) %>%
   mutate(across(-c("Company", "Item"), ~ifelse( . == "<5" , 5, .)))  %>%
-  mutate(across(-c("Company", "Item"), ~ifelse( . == "<1" , 1, .)))
+  mutate(across(-c("Company", "Item"), ~ifelse( . == "<1" , 1, .))) %>%
+  mutate(across(-c("Company", "Item"), ~ifelse( . == "" , 0, .))) 
+
+data<- data %>%
+  mutate(across(-c("Company", "Item"), ~{ifelse(grepl("\\d+\\.\\d+", .), .,
+                                                ifelse(grepl("[^A-Za-z0-9.]", .), -1, .))
+                                        } ) )
+
+
+
+
