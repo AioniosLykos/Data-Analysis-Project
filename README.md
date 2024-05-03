@@ -1,6 +1,5 @@
 # Data-Analysis-Project
 Analysis on a public data set: 
-
 Nutritional values, including Calories and Micro-nutrients from six of the largest and most popular fast food restaurants:
 McDonald's
 Burger King
