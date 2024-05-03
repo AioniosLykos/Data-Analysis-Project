@@ -57,7 +57,7 @@ https://www.kaggle.com/datasets/joebeachcapital/fast-food/data
 
 
 
--To make this inclusive of different type of people(men, women, old, young) and their goals(losing body fat, gaining body fat, maintaining), I will analyze everything depending on different calorie budget groups when creating my report. 
+-To make this inclusive of different types of people(men, women, old, young) and their goals(losing body fat, gaining body fat, maintaining), I will analyze everything depending on different calorie budget groups when creating my report. 
 
 
 Note that some values of certain items are changed since this data has been collected. (I verified (: )
