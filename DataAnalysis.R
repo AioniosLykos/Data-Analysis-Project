@@ -175,7 +175,7 @@ r_squared_3 <- 1 - (sum((macros_3$Calories - macros_3$TotalCalories_S)^2) / sum(
 percent_error_3 <- mean(abs((macros_3$TotalCalories_S - macros_3$Calories) / macros_3$Calories)) * 100
 
 
-# Calculate variance of absolute differences
+# Calculate variance of absolute differences{
 variance_3 <- var(abs(macros_3$Calories - macros_3$TotalCalories_S))
 
 #Calculate Standard Deviation
@@ -191,8 +191,17 @@ print(paste("Variance:", variance_3))
 print(paste("Standard Deviation:", deviation_3))
 
 
+#-----------------CHOSEN: METHOD 1----------------------------------------------------
 
+#Using Mean Absolute Error (MAE) would be appropriate in this case. 
+#MAE directly measures the average magnitude of errors in a set of predictions, 
+#which aligns well with comparing the total calorie real value versus the estimated calorie value. 
+#MAE provides a straightforward interpretation of the average discrepancy between the estimated and actual values,
+#making it a suitable metric for assessing the accuracy of my estimation model in terms of calorie prediction.
 
-
-
+allowed_errorPercentage <- mae_1/(sum(macros_1$TotalCalories_S)/count(macros_1))*100
+macros_1 <- macros_1 %>% 
+                      mutate("Fat%"= (.$calFromFat_S/.$TotalCalories_S)*100) %>%
+                      mutate("Carbs%"= (.$calFromCarbs_S/.$TotalCalories_S)*100) %>%
+                      mutate("Protein%"= (.$calFromProtein_S/.$TotalCalories_S)*100) 
 
