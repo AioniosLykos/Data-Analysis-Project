@@ -20,9 +20,6 @@ diet <- diet_original
 activityCategory <- activity_original
 
 #Cleaning data
-
-#remove unused row: weightwatchers
-data<- data %>% subset(.,select = -c(WeightWatchersPnts))
 data <- FFdata_original %>%
   mutate(across(-c("Company", "Item"), ~ifelse(is.na(.) , -1, .))) %>%
   mutate(across(-c("Company", "Item"), ~ifelse( . == "<5" , 5, .)))  %>%
@@ -43,6 +40,10 @@ sapply(data, class)
 #Remove spaces from column names
 names(data) <- gsub("\\s+", "", names(data))
 names(diet) <- gsub("\\s+", "", names(diet))
+
+
+#remove unused column: weightwatchers
+data<- data %>% subset(.,select = -c(WeightWatchersPnts))
 
 #Remove items that have no effect on the calorie budget or we have no information on it.
 data <- data %>% filter(.$Calories != -1 ) %>% filter(.$Calories != 0 )
