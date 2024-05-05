@@ -8,7 +8,7 @@ diet_original <- read_delim("~/AnalysisProject/Diet.csv")
 activity_original <- read_delim("~/AnalysisProject/ActivityCategories.csv")
 
 
-caloriesAllowed <- 700
+calorieBudget <- 700
 #constants proven by science
 cal_Per_GrOfProtein <- 4
 cal_Per_GrOfFat <- 9
@@ -20,6 +20,9 @@ diet <- diet_original
 activityCategory <- activity_original
 
 #Cleaning data
+
+#remove unused row: weightwatchers
+data<- data %>% subset(.,select = -c(WeightWatchersPnts))
 data <- FFdata_original %>%
   mutate(across(-c("Company", "Item"), ~ifelse(is.na(.) , -1, .))) %>%
   mutate(across(-c("Company", "Item"), ~ifelse( . == "<5" , 5, .)))  %>%
@@ -47,8 +50,11 @@ data <- data %>% filter(.$Calories != -1 ) %>% filter(.$Calories != 0 )
 data <- data %>% filter(.$Item != "", .$Company != "")
 
 #need to remove these rows that only have calories coming from color additives.
-check <- filter(data, data$`TotalFat(g)` == 0 , data$`Carbs(g)` == 0 , data$`Protein(g)` == 0 )
+color_additives <- data %>% filter( .$`TotalFat(g)` == 0 , .$`Carbs(g)` == 0 , .$`Protein(g)` == 0 )
 data<- data %>% filter( .$`TotalFat(g)` != 0 , .$`Carbs(g)` != 0 , .$`Protein(g)` != 0 )
+
+#Remove dublicated data
+data <- data[!duplicated(data),]
 
 
 #----------------FIRST METHOD-----------------------------------------------------------------
@@ -182,5 +188,10 @@ print(paste("R-squared:", r_squared_3))
 print(paste("Percent Error:", percent_error_3, "%"))
 print(paste("Variance:", variance_3))
 print(paste("Standard Deviation:", deviation_3))
+
+
+
+
+
 
 
