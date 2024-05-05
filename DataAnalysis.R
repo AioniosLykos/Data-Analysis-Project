@@ -175,7 +175,7 @@ r_squared_3 <- 1 - (sum((macros_3$Calories - macros_3$TotalCalories_S)^2) / sum(
 percent_error_3 <- mean(abs((macros_3$TotalCalories_S - macros_3$Calories) / macros_3$Calories)) * 100
 
 
-# Calculate variance of absolute differences{
+# Calculate variance of absolute differences
 variance_3 <- var(abs(macros_3$Calories - macros_3$TotalCalories_S))
 
 #Calculate Standard Deviation
