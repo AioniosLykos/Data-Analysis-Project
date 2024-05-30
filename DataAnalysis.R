@@ -199,9 +199,19 @@ print(paste("Standard Deviation:", deviation_3))
 #MAE provides a straightforward interpretation of the average discrepancy between the estimated and actual values,
 #making it a suitable metric for assessing the accuracy of my estimation model in terms of calorie prediction.
 
-allowed_errorPercentage <- mae_1/(sum(macros_1$TotalCalories_S)/count(macros_1))*100
 macros_1 <- macros_1 %>% 
                       mutate("Fat%"= (.$calFromFat_S/.$TotalCalories_S)*100) %>%
                       mutate("Carbs%"= (.$calFromCarbs_S/.$TotalCalories_S)*100) %>%
                       mutate("Protein%"= (.$calFromProtein_S/.$TotalCalories_S)*100) 
+
+
+LC_items <- macros_1 %>% filter(.$`Protein%` <= (diet[1,2] - 2.5 ), .$`Protein%` >= ( diet[1,2] + 2.5  ), .$`Carbs%`<= (diet[1,3] - 2.5 ) , .$`Carbs%` >= ( diet[1,3] + 2.5  ) , .$`Fat%` <= (diet[1,4] - 2.5 ) , .$`Fat%`>= ( diet[1,4] + 2.5  )  )
+
+LF_items <- macros_1 %>% filter(.$`Protein%` <= (diet[2,2] - 2.5 ), .$`Protein%` >= ( diet[2,2] + 2.5  ), .$`Carbs%` <= (diet[2,3] - 2.5 ) && .$`Carbs%` >= ( diet[2,3] + 2.5  ) , .$`Fat%` <= (diet[2,4] - 2.5 ) && .$`Fat%` >= ( diet[2,4] + 2.5  )  )
+
+B1_items <- macros_1 %>% filter(.$`Protein%` <= (diet[3,2] - 2.5 ),.$`Protein%` >= ( diet[3,2] + 2.5  ), .$`Carbs%` <= (diet[3,3] - 2.5 ) && .$`Carbs%` >= ( diet[3,3] + 2.5  ) ,.$`Fat%` <= (diet[3,4] - 2.5 ) && .$`Fat%` >= ( diet[3,4] + 2.5  )  )
+
+B2_items <- macros_1 %>% filter(.$`Protein%` <= (diet[4,2] - 2.5 ),.$`Protein%` >= ( diet[4,2] + 2.5  ), .$`Carbs%` <= (diet[4,3] - 2.5 ) && .$`Carbs%` >= ( diet[4,3] + 2.5  ) , .$`Fat%` <= (diet[4,4] - 2.5 ) && .$`Fat%` >= ( diet[4,4] + 2.5  )  )
+
+HC_items <- macros_1 %>% filter(.$`Protein%` <= (diet[5,2] - 2.5 ),.$`Protein%` >= ( diet[5,2] + 2.5  ), .$`Carbs%` <= (diet[5,3] - 2.5 ) && .$`Carbs%` >= ( diet[5,3] + 2.5  ) , .$`Fat%` <= (diet[5,4] - 2.5 ) && .$`Fat%` >= ( diet[5,4] + 2.5  )  )
 
