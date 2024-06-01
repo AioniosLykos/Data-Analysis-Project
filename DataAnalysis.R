@@ -220,18 +220,33 @@ HC_items <- macros_1 %>% filter(.$`Protein%` <= (pull(diet[5,2]) - 2.5 ), .$`Pro
 ##dont count if the carbs are lower than indicated value
 ##punish more heavily for high carbs deviation. 
 #normalizing the deviations proportionally to the diet macros.
-macros_1 <- macros_1 %>% mutate(ConformityScore_LC = 0.2*abs(pull(diet[1,2]) - macros_1$`Protein%`) + 0.6*ifelse(macros_1$`Carbs%` > pull(diet[1,3]), abs(pull(diet[1,3]) -macros_1$`Carbs%`), 0)+ 0.2*abs(pull(diet[1,4]) - macros_1$`Fat%`))
+macros_1 <- macros_1 %>% mutate(ConformityScore_LC = 100 - (0.2*abs(pull(diet[1,2]) - macros_1$`Protein%`) + 0.6*ifelse(macros_1$`Carbs%` > pull(diet[1,3]), abs(pull(diet[1,3]) -macros_1$`Carbs%`), 0)+ 0.2*abs(pull(diet[1,4]) - macros_1$`Fat%`)))
                                                       
-macros_1 <- macros_1 %>% mutate(ConformityScore_LF = 0.2*abs(pull(diet[2,2]) - macros_1$`Protein%`) + 0.2*abs(pull(diet[2,3]) -macros_1$`Carbs%`)+ 0.6*ifelse(macros_1$`Fat%` > pull(diet[2,4]), abs(pull(diet[2,4]) - macros_1$`Fat%`),0))
+macros_1 <- macros_1 %>% mutate(ConformityScore_LF = 100 - (0.2*abs(pull(diet[2,2]) - macros_1$`Protein%`) + 0.2*abs(pull(diet[2,3]) -macros_1$`Carbs%`)+ 0.6*ifelse(macros_1$`Fat%` > pull(diet[2,4]), abs(pull(diet[2,4]) - macros_1$`Fat%`),0)))
 
-macros_1 <- macros_1 %>% mutate(ConformityScore_B1 = 0.34*abs(pull(diet[3,2]) - macros_1$`Protein%`) + 0.34*abs(pull(diet[3,3]) -macros_1$`Carbs%`)+ 0.32*abs(pull(diet[3,4]) - macros_1$`Fat%`))
+macros_1 <- macros_1 %>% mutate(ConformityScore_B1 = 100 - (0.34*abs(pull(diet[3,2]) - macros_1$`Protein%`) + 0.34*abs(pull(diet[3,3]) -macros_1$`Carbs%`)+ 0.32*abs(pull(diet[3,4]) - macros_1$`Fat%`)))
 
-macros_1 <- macros_1 %>% mutate(ConformityScore_B2 = 0.34*abs(pull(diet[4,2]) - macros_1$`Protein%`) + 0.32*abs(pull(diet[4,3]) -macros_1$`Carbs%`)+ 0.34*abs(pull(diet[4,4]) - macros_1$`Fat%`))
+macros_1 <- macros_1 %>% mutate(ConformityScore_B2 = 100 - (0.34*abs(pull(diet[4,2]) - macros_1$`Protein%`) + 0.32*abs(pull(diet[4,3]) -macros_1$`Carbs%`)+ 0.34*abs(pull(diet[4,4]) - macros_1$`Fat%`)))
 
-macros_1 <- macros_1 %>% mutate(ConformityScore_HC = 0.45*ifelse(macros_1$`Protein%` > pull(diet[5,2]) , abs(pull(diet[5,2]) - macros_1$`Protein%`) ,0 ) + 0.1*abs(pull(diet[4,3]) -macros_1$`Carbs%`)+ 0.45*ifelse(macros_1$`Fat%` > pull(diet[5,4]), abs(pull(diet[5,4]) - macros_1$`Fat%`),0))
+macros_1 <- macros_1 %>% mutate(ConformityScore_HC = 100 - (0.45*ifelse(macros_1$`Protein%` > pull(diet[5,2]) , abs(pull(diet[5,2]) - macros_1$`Protein%`) ,0 ) + 0.1*abs(pull(diet[4,3]) -macros_1$`Carbs%`)+ 0.45*ifelse(macros_1$`Fat%` > pull(diet[5,4]), abs(pull(diet[5,4]) - macros_1$`Fat%`),0)))
 
-                                                      
-                                                      
-                                                      
-                                                      
+#overwrite the empty already existing data frames
+
+LC_items <- macros_1 %>% select("Company" , "Item" , "ConformityScore_LC")%>%
+  arrange(desc(ConformityScore_LC))
+
+LF_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_LF")%>%
+  arrange(desc(ConformityScore_LF))
+
+B1_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_B1")%>%
+  arrange(desc(ConformityScore_B1))
+
+B2_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_B2")%>%
+  arrange(desc(ConformityScore_B2))
+
+HC_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_HC")%>%
+  arrange(desc(ConformityScore_HC))
+
+
+                                                
                                                       
