@@ -2,6 +2,12 @@ library(readr)
 library(tidyr)
 library(dplyr)
 library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(plotly)
+library(DT)
+library(htmlwidgets)
+library(IRdisplay)
 
 FFdata_original <- read_delim("~/AnalysisProject/FastFoodNutritionMenuV3.csv")
 diet_original <- read_delim("~/AnalysisProject/Diet.csv")
@@ -232,20 +238,60 @@ macros_1 <- macros_1 %>% mutate(ConformityScore_HC = 100 - (0.45*ifelse(macros_1
 
 #overwrite the empty already existing data frames
 
-LC_items <- macros_1 %>% select("Company" , "Item" , "ConformityScore_LC")%>%
+LC_items <- macros_1 %>% select("Company" , "Item" , "ConformityScore_LC", "Calories", "Protein(g)")%>%
   arrange(desc(ConformityScore_LC))
 
-LF_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_LF")%>%
+LF_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_LF", "Calories", "Protein(g)")%>%
   arrange(desc(ConformityScore_LF))
 
-B1_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_B1")%>%
+B1_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_B1", "Calories", "Protein(g)")%>%
   arrange(desc(ConformityScore_B1))
 
-B2_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_B2")%>%
+B2_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_B2", "Calories", "Protein(g)")%>%
   arrange(desc(ConformityScore_B2))
 
-HC_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_HC")%>%
+HC_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_HC", "Calories", "Protein(g)")%>%
   arrange(desc(ConformityScore_HC))
+
+#Showing most conforming items to the diet
+LC_table <- LC_items %>%  filter(.$ConformityScore_LC >= 90 ) %>% datatable()
+LF_table <- LF_items %>%  filter(.$ConformityScore_LF >= 90 ) %>% datatable()
+B1_table <- B1_items %>%  filter(.$ConformityScore_B1 >= 90 ) %>% datatable()
+B2_table <- B2_items %>%  filter(.$ConformityScore_B2 >= 90 ) %>% datatable()
+HC_table <- HC_items %>%  filter(.$ConformityScore_HC >= 90 ) %>% datatable()
+
+
+
+LC_plot <- LC_items %>% filter(.$Company == "KFC") %>% head(10) %>% ggplot(aes( x = reorder(Item, -ConformityScore_LC) , y= ConformityScore_LC)) + 
+  geom_point(stat = "identity") +
+  geom_text(aes(label = sprintf("%.3f", ConformityScore_LC)), vjust = -0.3, size = 3.5) +
+  theme_minimal() +
+  labs(title = "Conformity Scores of Food Items at KFC, Low Carbs Diet",
+       x = "Food Item",
+       y = "Conformity Score") +
+  scale_fill_brewer(palette = "Set3") +
+  theme(axis.text.x = element_text(angle = , hjust = 1))
+
+
+
+LF_plot <- LF_items %>% filter(.$Company == "KFC") %>% filter(.$ConformityScore_LF >= 85 )%>% ggplot(aes( x = reorder(Item, -ConformityScore_LF) , y= ConformityScore_LF)) + 
+  geom_point(stat = "identity") +
+  geom_text(aes(label = sprintf("%.3f", ConformityScore_LF)), vjust = -0.3, size = 3.5) +
+  theme_minimal() +
+  labs(title = "Conformity Scores of Food Items at KFC, Low Fat Diet",
+       x = "Food Item",
+       y = "Conformity Score") +
+  scale_fill_brewer(palette = "Set3") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+
+
+
+
+
 
 
                                                 
