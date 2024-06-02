@@ -8,6 +8,7 @@ library(plotly)
 library(DT)
 library(htmlwidgets)
 library(IRdisplay)
+library(flexdashboard) 
 
 FFdata_original <- read_delim("~/AnalysisProject/FastFoodNutritionMenuV3.csv")
 diet_original <- read_delim("~/AnalysisProject/Diet.csv")
@@ -270,20 +271,23 @@ HC_items <- macros_1 %>% select("Company" , "Item", "ConformityScore_HC", "Calor
   arrange(desc(ConformityScore_HC))
 
 #Showing most conforming items to the diet
-LC_table <- LC_items %>%  filter(.$ConformityScore_LC >= 90 ) %>% datatable()
-LF_table <- LF_items %>%  filter(.$ConformityScore_LF >= 90 ) %>% datatable()
-B1_table <- B1_items %>%  filter(.$ConformityScore_B1 >= 90 ) %>% datatable()
-B2_table <- B2_items %>%  filter(.$ConformityScore_B2 >= 90 ) %>% datatable()
-HC_table <- HC_items %>%  filter(.$ConformityScore_HC >= 90 ) %>% datatable()
-
-
-
+LC_table <- LC_items %>% 
+  filter(ConformityScore_LC >= 90 ) %>% 
+  datatable(caption = htmltools::HTML("<b><big>Most conforming items to Low Carbs Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+LF_table <- LF_items %>%  filter(.$ConformityScore_LF >= 90 ) %>% 
+  datatable(caption = htmltools::HTML("<b><big>Most conforming items to Low Fat Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+B1_table <- B1_items %>%  filter(.$ConformityScore_B1 >= 90 ) %>% 
+  datatable(caption = htmltools::HTML("<b><big>Most conforming items to Balanced1 Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+B2_table <- B2_items %>%  filter(.$ConformityScore_B2 >= 90 ) %>% 
+  datatable(caption = htmltools::HTML("<b><big>Most conforming items to Balanced2 Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+HC_table <- HC_items %>%  filter(.$ConformityScore_HC >= 90 ) %>% 
+  datatable(caption = htmltools::HTML("<b><big>Most conforming items to High Carbs Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
 
 
 LC_best <- LC_items %>%  filter(ConformityScore_LC >= 90 ) %>% count(Company) %>% mutate(MenuC = menu_counts[Company]) %>%
   ggplot(aes(x = Company, y = n, fill = Company)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits menu")), vjust = 0.5 , angle = 0, size = 4) +
+  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "%\nof its\nmenu")), vjust = 0.7 , angle = 0, size = 4) +
   labs(title = "Best Conforming Item Count by each Company to Low Carbs Diet",
        x = "Company",
        y = "Count") +
@@ -293,7 +297,7 @@ LC_best <- LC_items %>%  filter(ConformityScore_LC >= 90 ) %>% count(Company) %>
 LF_best <- LF_items %>%  filter(ConformityScore_LF >= 90 ) %>% count(Company) %>% mutate(MenuC = menu_counts[Company]) %>%
   ggplot(aes(x = Company, y = n, fill = Company)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits menu")), vjust = 0.5 , angle = 0, size = 4) +
+  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "%\nof its\nmenu")), vjust = 0.7, angle = 0, size = 4) +
   labs(title = "Best Conforming Item Count by each Company to Low Fat Diet",
        x = "Company",
        y = "Count") +
@@ -313,7 +317,7 @@ B1_best <- B1_items %>%  filter(ConformityScore_B1 >= 90 ) %>% count(Company) %>
 B2_best <- B2_items %>%  filter(ConformityScore_B2 >= 90 ) %>% count(Company) %>% mutate(MenuC = menu_counts[Company]) %>%
   ggplot(aes(x = Company, y = n, fill = Company)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits menu")), vjust = 0.5 , angle = 0, size = 4) +
+  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "%\nof its\nmenu")), vjust = 0.7 , angle = 0, size = 4) +
   labs(title = "Best Conforming Item Count by each Company to Balanced2 Diet",
        x = "Company",
        y = "Count") +
@@ -323,7 +327,7 @@ B2_best <- B2_items %>%  filter(ConformityScore_B2 >= 90 ) %>% count(Company) %>
 HC_best <- HC_items %>%  filter(ConformityScore_HC >= 90) %>%  count(Company) %>% mutate(MenuC = menu_counts[Company]) %>%
   ggplot(aes(x = Company, y = n, fill = Company)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits menu")), vjust = 0.5 , angle = 0, size = 4) +
+  geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "%\nof its\nmenu")), vjust = 0.7 , angle = 0, size = 4) +
   labs(title = "Best Conforming Item Count by each Company to High Carbs Diet",
        x = "Company",
        y = "Count") +
