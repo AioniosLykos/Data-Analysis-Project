@@ -11,7 +11,6 @@ library(IRdisplay)
 library(flexdashboard) 
 library(patchwork)
 library(gridExtra)
-install.packages('ggthemes', dependencies = TRUE)
 
 FFdata_original <- read_delim("~/AnalysisProject/FastFoodNutritionMenuV3.csv")
 diet_original <- read_delim("~/AnalysisProject/Diet.csv")
@@ -356,3 +355,43 @@ HC_best <- HC_items %>%  filter(ConformityScore_HC >= 90) %>%  count(Company, Ca
 grid.arrange(LC_best,LF_best, ncol = 1)
 grid.arrange(B1_best,B2_best, ncol=1)
 grid.arrange(HC_best, ncol =1)
+
+
+
+#THE Best item per company
+
+topItemPerCompany_LC <- LC_items %>%
+  group_by(Company, CalorieCategory)  %>%
+  slice_max(order_by = ConformityScore_LC, n = 1, with_ties = FALSE) %>% 
+  ungroup() %>%
+  datatable(caption = htmltools::HTML("<b><big>The best item per company conforming to Low Carb Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+  
+topItemPerCompany_LF<- LF_items %>%
+  group_by(Company, CalorieCategory)  %>%
+  slice_max(order_by = ConformityScore_LF, n = 1, with_ties = FALSE) %>% 
+  ungroup() %>%
+  datatable(caption = htmltools::HTML("<b><big>The best item per company conforming to Low Fat Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+
+topItemPerCompany_B1 <- B1_items %>%
+  group_by(Company, CalorieCategory)  %>%
+  slice_max(order_by = ConformityScore_B1, n = 1, with_ties = FALSE) %>% 
+  ungroup() %>%
+  datatable(caption = htmltools::HTML("<b><big>The best item per company conforming to Balanced1 Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+
+topItemPerCompany_B2 <- B2_items %>%
+  group_by(Company, CalorieCategory)  %>%
+  slice_max(order_by = ConformityScore_B2, n = 1, with_ties = FALSE) %>% 
+  ungroup() %>%
+  datatable(caption = htmltools::HTML("<b><big>The best item per company conforming to Balanced2 Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+
+topItemPerCompany_HC <- HC_items %>%
+  group_by(Company, CalorieCategory)  %>%
+  slice_max(order_by = ConformityScore_HC, n = 1, with_ties = FALSE) %>% 
+  ungroup() %>%
+  datatable(caption = htmltools::HTML("<b><big>The best item per company conforming to High Carb Diet</big></b>"), filter = 'top', options = list(pageLength = 10 ))
+
+
+
+
+
+
