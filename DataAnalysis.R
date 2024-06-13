@@ -393,5 +393,3 @@ topItemPerCompany_HC <- HC_items %>%
 
 
 
-
-
