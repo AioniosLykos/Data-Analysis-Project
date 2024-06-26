@@ -1,63 +1,66 @@
 # Data-Analysis-Project
-Analysis on a public data set: 
-Nutritional values, including Calories and Micro-nutrients from six of the largest and most popular fast food restaurants:
+**Overview**
 
-McDonald's
+Analysis on a public dataset: Nutritional values, including Calories and Micro-nutrients from six of the largest and most popular fast food restaurants:
 
-Burger King
+-McDonald's
 
-Wendy's
+-Burger King
 
-Kentucky Fried Chicken (KFC)
+-Wendy's
 
-Taco Bell
+-Kentucky Fried Chicken (KFC)
 
-Pizza Hut
+-Taco Bell
 
--The dataset used in this analysis is taken from 
-https://www.kaggle.com/datasets/joebeachcapital/fast-food/data
+-Pizza Hut
 
+		
 
+**Dataset**
 
--Analysis is going to be made based on some known facts:
-
-  *Protein is 4 calories per gram.
-
-  *Fat is 9 calories per gram.
-
-  *Carbohydrates are 4 calories per gram.
-
-  *Fiber is 2 calories per gram.
-
-  *Fiber is a type of carbohydrate that the human body can't digest, therefore it should not be included in the calorie intake of a person. 
-
-  *Aerobic activities include: Walking,Jogging,Running,Hiking,Bicycling,Swimming,Jumping rope,Dancing,Stair climbing,Rowing,Playing sports
-
-  *Anaerobic activities include: Weightlifting, Jumping or jumping rope,Sprinting,High-intensity interval training (HIIT),Biking (High intensity)
+The dataset used in this analysis is taken from [Kaggle.](https://www.kaggle.com/datasets/joebeachcapital/fast-food/data)
 
 
 
--Every individual's diet looks different. Some might have dietary restrictions that can not be analysized in this project. I only aim to answer the following question; 
+**Analysis Assumptions**
 
-  *How do we make better choices when it comes to fast food?
+-Protein is 4 calories per gram.
 
+-Fat is 9 calories per gram.
 
+-Carbohydrates are 4 calories per gram.
 
--I will answer the previous question given an activity category and fat,protein,carbohydrates percentages of a followed diet plan of an individual. 
+-Fiber is 2 calories per gram.
 
-
-
--As said above, individual differences will not be taken into consideration such as age, height, weight, fitness goal(gaining or losing weight). 
-
-  *I will use a calorie budget for a cheat meal (upper limit)
-
-  *ex: a person who has a calorie budget of 700 cal for a cheat meal, what (where is implied) should they choose to eat?
-
-  *This budget can be set depending on the person's goals and situation.
+-Fiber, being a type of carbohydrate that the human body can't digest, should not be included in the calorie intake.
 
 
 
--To make this inclusive of different types of people(men, women, old, young) and their goals(losing body fat, gaining body fat, maintaining), I will analyze everything depending on different calorie budget groups when creating my report. 
+**Objective**
+
+Every individual's diet looks different. Some might have dietary restrictions that cannot be analyzed in this project. The aim is to answer the following question:
+
+-**How do we make _better choices_ when it comes to fast food?**
 
 
-Note that some values of certain items are changed since this data has been collected. (I verified (: )
+
+**Methodology**
+
+-Answer the above question given the fat, protein, and carbohydrate percentages of an individual's diet plan.
+
+-Individual differences such as age, height, weight, and fitness goals (gaining or losing weight) are not considered.
+
+-Use a calorie budget for a cheat meal (upper limit).
+
+Example: For a person with a calorie budget of 700 calories for a cheat meal, what (where is implied) should they choose to eat?
+
+This budget can be set depending on the person's goals and situation.
+
+-Analyze different calorie budget groups to make this inclusive of different types of people (men, women, old, young) and their goals (losing body fat, gaining body fat, maintaining).
+
+
+
+**Note**
+
+Some values of certain items may have changed since this data was collected. These changes have been verified.
