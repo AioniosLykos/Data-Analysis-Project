@@ -91,39 +91,170 @@ ui <- fluidPage(
       selectInput("diet_type", "Select Diet Type:",
                   choices = c("Low Carb", "Low Fat", "Balanced1", "Balanced2", "High Carb"),
                   selected = "Low Carb"),
-        # Output for displaying the diet table
+      # Output for displaying the diet table
     ),
     mainPanel(
-      DTOutput("dietTable"),
-      DTOutput("cleanedTable")  # Output for displaying the cleaned datatable
-      
+      tabsetPanel(
+        tabPanel("Preselected Macros",
+                 htmlOutput("title1"),
+                 DTOutput("dietTable")
+                 # Output for displaying the cleaned datatable
+        ),
+        tabPanel("Personalized Data Entry",
+                 h3("Enter your macro data"),
+                 textInput("macro_name", "Name:", ""),
+                 div(
+                   style = "display: flex; justify-content: space-between;",
+                   div(
+                     h4(""),
+                     numericInput("protein_percent", "Protein (%)", value = 0, min = 0, max = 100, step = 1)
+                   ),
+                   div(
+                     h4(""),
+                     numericInput("carbs_percent", "Carbs (%)", value = 0, min = 0, max = 100, step = 1)
+                   ),
+                   div(
+                     h4(""),
+                     numericInput("fat_percent", "Fat (%)", value = 0, min = 0, max = 100, step = 1)
+                   )
+                 ),
+                 actionButton("add_macro", "Add Diet"),
+                 br(), # New line for spacing
+                 br(), # New line for spacing
+                 div(
+                   class = "row",
+                   div(
+                     class = "col-md-6",
+                     h3("Select Diet to Delete:"),
+                     uiOutput("select_diet_to_delete")
+                   ),
+                   div(
+                     class = "col-md-6",
+                     h3(""),
+                     actionButton("delete_macro", "Confirm Delete")
+                   )
+                 ),
+                 br(), # New line for spacing
+                 DTOutput("macro_table"),
+                 br(), # New line for spacing
+                 textOutput("validation_message"),
+                 br() # New line for spacing
+        )
+      ),
+      htmlOutput("title2"),
+      DTOutput("cleanedTable")
     )
   )
 )
 
-
-server <- function(input, output) {
+# Define server logic
+server <- function(input, output, session) {
   # Reactive expression for cleaned data
   cleaned_data <- reactive({
-    clean_data(FFdata_original)
+    # Replace with your clean_data function or reactive expression
+    # clean_data(FFdata_original)
+    FFdata_original
   })
   
   # Reactive expression for diet table
   dietTable <- reactive({
-    diet_original  # Assuming diet_original is read from Diet.csv
+    # Replace with your dietTable reactive expression or function
+    # diet_original  # Assuming diet_original is read from Diet.csv
+    diet_original
   })
+  
+  # Reactive value to store diet types
+  diet_types <- reactiveVal(c("Low Carb", "Low Fat", "Balanced1", "Balanced2", "High Carb"))
+  
+  # Reactive values to store user-entered macro data
+  user_macros <- reactiveVal(data.frame(Name = character(), Protein = numeric(), Carbs = numeric(), Fat = numeric(), stringsAsFactors = FALSE))
   
   # Render the cleaned datatable as a reactive output
   output$cleanedTable <- renderDT({
     cleaned_data()
   })
   
+  output$title1 <- renderUI({
+    HTML('<h3 style="color:blue; font-style:italic;">Macros of Preselected Diet Types</h3>')
+  })
+  
   # Render the diet table as a reactive output
   output$dietTable <- renderDT({
     dietTable()
+  }, options = list(
+    dom = 't',       # Only show table, no other controls
+    paging = FALSE,  # Disable pagination
+    info = FALSE     # Disable info text (e.g., "Showing 1 to 10 of 100 entries")
+  ))
+  
+  # Add macro to the table when button is clicked
+  observeEvent(input$add_macro, {
+    total_percent <- input$protein_percent + input$carbs_percent + input$fat_percent
+    if (total_percent == 100) {
+      # Check if macro_name already exists or is a predefined diet type
+      if (input$macro_name %in% user_macros()$Name || input$macro_name %in% diet_types()) {
+        output$validation_message <- renderText({ "This name is already used or it's a predefined diet type. Please choose a different name." })
+        return()
+      } else {
+        output$validation_message <- renderText({ "" })
+      }
+      
+      new_macro <- data.frame(
+        Name = input$macro_name,
+        Protein = input$protein_percent,
+        Carbs = input$carbs_percent,
+        Fat = input$fat_percent,
+        stringsAsFactors = FALSE
+      )
+      # Concatenate new_macro with existing user_macros()
+      updated_macros <- rbind(user_macros(), new_macro)
+      user_macros(updated_macros)
+      
+      # Update diet_types with the new macro name
+      diet_types(c(diet_types(), input$macro_name))
+    } else {
+      output$validation_message <- renderText({ "The percentages must sum up to 100%." })
+    }
+  })
+  
+  # Delete selected macro from user_macros when button is clicked
+  observeEvent(input$delete_macro, {
+    if (!is.null(input$select_diet_to_delete)) {
+      updated_macros <- user_macros()
+      updated_macros <- updated_macros[!(updated_macros$Name %in% input$select_diet_to_delete), ]
+      user_macros(updated_macros)
+      
+      # Update diet_types excluding the deleted macro name
+      diet_types(diet_types()[!(diet_types() %in% input$select_diet_to_delete)])
+    }
+  })
+  
+  # Render the user-entered macro table
+  output$macro_table <- renderDT({
+    user_macros()
+  }, options = list(
+    paging = FALSE,  # Disable pagination
+    searching = FALSE,  # Disable search
+    info = FALSE     # Disable info text
+  ))
+  
+  # Dynamically render selectInput "select_diet_to_delete"
+  output$select_diet_to_delete <- renderUI({
+    selectInput("select_diet_to_delete", "",
+                choices = user_macros()$Name)
+  })
+  
+  # Update selectInput "diet_type" dynamically based on user_macros and diet_types
+  observe({
+    updated_choices <- unique(c(diet_types(), user_macros()$Name))
+    updateSelectInput(session, "diet_type", choices = updated_choices)
+  })
+  
+  # Initial update of selectInput "diet_type"
+  observe({
+    updateSelectInput(session, "diet_type", choices = diet_types())
   })
 }
-
 
 # Run the application 
 shinyApp(ui = ui, server = server)
