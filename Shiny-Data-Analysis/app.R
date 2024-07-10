@@ -74,6 +74,22 @@ clean_data <- function(input_data) {
 
 cleanData <- clean_data(FFdata_original)
 
+#Final Usable Data Table 
+macros <- cleanData
+macros <- macros %>%
+  #calFromFat_S means we are using scientific value and not data$CaloriesfromFat (which is not too far off)
+  mutate(calFromFat_S = .$'TotalFat(g)'*cal_Per_GrOfFat,
+         calFromCarbs_S = .$'Carbs(g)'*cal_Per_GrOfCarbs,
+         calFromProtein_S = .$'Protein(g)'*cal_Per_GrOfProtein) %>%
+  mutate(TotalCalories_S = .$calFromProtein_S + .$calFromCarbs_S + .$calFromFat_S)
+macros <- macros %>% 
+  mutate("Fat%"= (.$calFromFat_S/.$TotalCalories_S)*100) %>%
+  mutate("Carbs%"= (.$calFromCarbs_S/.$TotalCalories_S)*100) %>%
+  mutate("Protein%"= (.$calFromProtein_S/.$TotalCalories_S)*100) %>%
+  select("Company" , "Item","TotalCalories_S", "Protein%", "Carbs%", "Fat%") %>%
+  rename( "Calories" = "TotalCalories_S")
+
+  
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   tags$head(
@@ -91,69 +107,86 @@ ui <- fluidPage(
       selectInput("diet_type", "Select Diet Type:",
                   choices = c("Low Carb", "Low Fat", "Balanced1", "Balanced2", "High Carb"),
                   selected = "Low Carb"),
+      
+      # Two-sided interval for calorie budget
+      sliderInput("calorie_budget", "Calorie Budget:",
+                  min = 0, max = 1500, value = c(300, 700),
+                  step = 25, sep = ""),
+      
       # Output for displaying the diet table
     ),
     mainPanel(
       tabsetPanel(
-        tabPanel("Preselected Macros",
-                 htmlOutput("title1"),
-                 DTOutput("dietTable")
-                 # Output for displaying the cleaned datatable
-        ),
-        tabPanel("Personalized Data Entry",
-                 h3("Enter your macro data"),
-                 textInput("macro_name", "Name:", ""),
-                 div(
-                   style = "display: flex; justify-content: space-between;",
-                   div(
-                     h4(""),
-                     numericInput("protein_percent", "Protein (%)", value = 0, min = 0, max = 100, step = 1)
+        tabPanel("Diet",
+                 tabsetPanel(
+                   tabPanel("Preselected Macros",
+                            htmlOutput("title1"),
+                            DTOutput("dietTable")
                    ),
-                   div(
-                     h4(""),
-                     numericInput("carbs_percent", "Carbs (%)", value = 0, min = 0, max = 100, step = 1)
-                   ),
-                   div(
-                     h4(""),
-                     numericInput("fat_percent", "Fat (%)", value = 0, min = 0, max = 100, step = 1)
+                   tabPanel("Personalized Data Entry",
+                            h3("Enter your macro data"),
+                            textInput("macro_name", "Name:", ""),
+                            div(
+                              style = "display: flex; justify-content: space-between;",
+                              div(
+                                h4(""),
+                                numericInput("protein_percent", "Protein (%)", value = 0, min = 0, max = 100, step = 1)
+                              ),
+                              div(
+                                h4(""),
+                                numericInput("carbs_percent", "Carbs (%)", value = 0, min = 0, max = 100, step = 1)
+                              ),
+                              div(
+                                h4(""),
+                                numericInput("fat_percent", "Fat (%)", value = 0, min = 0, max = 100, step = 1)
+                              )
+                            ),
+                            actionButton("add_macro", "Add Diet"),
+                            br(), # New line for spacing
+                            br(), # New line for spacing
+                            div(
+                              class = "row",
+                              div(
+                                class = "col-md-6",
+                                h3("Select Diet to Delete:"),
+                                uiOutput("select_diet_to_delete")
+                              ),
+                              div(
+                                class = "col-md-6",
+                                h3(""),
+                                actionButton("delete_macro", "Confirm Delete")
+                              )
+                            ),
+                            br(), # New line for spacing
+                            DTOutput("macro_table"),
+                            br(), # New line for spacing
+                            textOutput("validation_message"),
+                            br() # New line for spacing
                    )
-                 ),
-                 actionButton("add_macro", "Add Diet"),
-                 br(), # New line for spacing
-                 br(), # New line for spacing
-                 div(
-                   class = "row",
-                   div(
-                     class = "col-md-6",
-                     h3("Select Diet to Delete:"),
-                     uiOutput("select_diet_to_delete")
-                   ),
-                   div(
-                     class = "col-md-6",
-                     h3(""),
-                     actionButton("delete_macro", "Confirm Delete")
-                   )
-                 ),
-                 br(), # New line for spacing
-                 DTOutput("macro_table"),
-                 br(), # New line for spacing
-                 textOutput("validation_message"),
-                 br() # New line for spacing
+                 )
         )
-      ),
-      htmlOutput("title2"),
-      DTOutput("cleanedTable")
+        , tabPanel("Data Tables",
+                   tabsetPanel(
+                     tabPanel("Raw Data Table",
+                              
+                              DTOutput("original")
+                     ),
+                     tabPanel("Cleaned Data Table",
+                              DTOutput("cleanedTable")
+                     ),
+                     tabPanel("Macros% Data Table",
+                              DTOutput("finalTable")
+                     )
+                   )
+        ))
     )
-  )
-)
+  ))
 
 # Define server logic
 server <- function(input, output, session) {
   # Reactive expression for cleaned data
   cleaned_data <- reactive({
-    # Replace with your clean_data function or reactive expression
-    # clean_data(FFdata_original)
-    FFdata_original
+    clean_data(FFdata_original)
   })
   
   # Reactive expression for diet table
@@ -173,11 +206,12 @@ server <- function(input, output, session) {
   output$cleanedTable <- renderDT({
     cleaned_data()
   })
+  output$original <- renderDT(FFdata_original)
+  output$macrosTable <- renderDT(macros)
   
   output$title1 <- renderUI({
     HTML('<h3 style="color:blue; font-style:italic;">Macros of Preselected Diet Types</h3>')
   })
-  
   # Render the diet table as a reactive output
   output$dietTable <- renderDT({
     dietTable()
@@ -238,6 +272,14 @@ server <- function(input, output, session) {
     info = FALSE     # Disable info text
   ))
   
+  output$finalTable <- renderDT({
+    datatable(macros, options = list(
+      columnDefs =  list(
+        list(targets = c(1, 2), orderable = FALSE)  # Assuming Company is the first column and Item is the second
+      )
+    )) %>%
+      formatRound(columns = c("Protein%", "Carbs%", "Fat%"), digits = 4)
+  })
   # Dynamically render selectInput "select_diet_to_delete"
   output$select_diet_to_delete <- renderUI({
     selectInput("select_diet_to_delete", "",
@@ -255,6 +297,5 @@ server <- function(input, output, session) {
     updateSelectInput(session, "diet_type", choices = diet_types())
   })
 }
-
 # Run the application 
 shinyApp(ui = ui, server = server)
