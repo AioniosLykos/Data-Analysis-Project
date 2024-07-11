@@ -93,6 +93,7 @@ macros <- macros %>%
   rename( "Calories" = "TotalCalories_S")
 
 
+#Define UI 
 ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap"),
@@ -327,18 +328,19 @@ server <- function(input, output, session) {
   observeEvent(input$confirmChoices, {
     # Reactive expression to enforce sum of constants to 1
     sum_constants <- input$protein_constant + input$carbs_constant + input$fat_constant
-    if (sum_constants != 1) {
+   
+    if (abs(sum_constants - 1) > 1e-10) {
       updateNumericInput(session, "protein_constant", value = 0.30)
       updateNumericInput(session, "carbs_constant", value = 0.35)
       updateNumericInput(session, "fat_constant", value = 0.35)
+      # Show notification for constants reset
+      showNotification(
+        "The constants (Protein, Carbs, Fat) have been reset to default values because their sum did not equal 1.",
+        duration = 5000,  # Duration in milliseconds (e.g., 5000 ms = 5 seconds)
+        type = "warning"  # Notification type
+      )
+      
     }
-    
-    # Show notification for constants reset
-    showNotification(
-      "The constants (Protein, Carbs, Fat) have been reset to default values because their sum did not equal 1.",
-      duration = 5000,  # Duration in milliseconds (e.g., 5000 ms = 5 seconds)
-      type = "warning"  # Notification type
-    )
     
     
     selected_diet_type <- input$diet_type
@@ -347,7 +349,7 @@ server <- function(input, output, session) {
     
     
     if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
-      cat("in diet\n")
+      
       diet_data <- dietTable() %>%
         filter(Diet_Type == selected_diet_type)  # Filter diet data for selected type
       if (nrow(diet_data) == 0) {
