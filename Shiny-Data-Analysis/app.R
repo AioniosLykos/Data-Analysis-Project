@@ -12,6 +12,7 @@ library(IRdisplay)
 library(flexdashboard) 
 library(patchwork)
 library(gridExtra)
+library(magrittr)
 
 library(shiny)
 library(shinyBS)
@@ -89,10 +90,17 @@ macros <- macros %>%
   mutate("Fat%"= (.$calFromFat_S/.$TotalCalories_S)*100) %>%
   mutate("Carbs%"= (.$calFromCarbs_S/.$TotalCalories_S)*100) %>%
   mutate("Protein%"= (.$calFromProtein_S/.$TotalCalories_S)*100) %>%
-  select("Company" , "Item","TotalCalories_S", "Protein%", "Carbs%", "Fat%","Protein(g)", "TotalFat(g)","Carbs(g)") %>%
+  select("Company" , "Item","TotalCalories_S", "Protein%", "Carbs%", "Fat%","Protein(g)", "TotalFat(g)","Carbs(g)", "Sugars(g)", "Fiber(g)", "Cholesterol(mg)") %>%
   rename( "Calories" = "TotalCalories_S")
 
+macros$`Protein(g)` <- as.numeric(macros$`Protein(g)`)
+macros$`Fiber(g)` <- as.numeric(macros$`Fiber(g)`)
+macros$`Sugars(g)` <- as.numeric(macros$`Sugars(g)`)
+macros$`Cholesterol(mg)` <- as.numeric(macros$`Cholesterol(mg)`)
 
+
+
+#Define UI 
 ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap"),
@@ -118,18 +126,6 @@ ui <- fluidPage(
       sliderInput("calorie_budget", "Calorie Budget:",
                   min = 0, max = 1500, value = c(300, 700),
                   step = 25, sep = ""),
-      
-      fluidRow(
-        column(4,
-               numericInput("protein_constant", HTML("Protein Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 1, the more you penalize calories from proteins in your diet. Protein, Carbs, and Fat constants must sum up to 1. '></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%")
-        ),
-        column(4,
-               numericInput("carbs_constant", HTML("Carbs Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 1, the more you penalize calories from carbs in your diet. Protein, Carbs, and Fat constants must sum up to 1. '></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
-        ),
-        column(4,
-               numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 1, the more you penalize calories from  in your diet. Protein, Carbs, and Fat constants must sum up to 1. '></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
-        )
-      ),
       
       actionButton("confirmChoices", "Confirm Your Choices")
     ),
@@ -181,7 +177,47 @@ ui <- fluidPage(
                             br(), # New line for spacing
                             textOutput("validation_message"),
                             br() # New line for spacing
-                   )
+                   ),
+                   tabPanel("Advanced Parameters",
+                            h3("Advanced Options for Tailored Results"),
+                            br(),
+                            h4("The following parameters are used in Conformity Score calculations and must sum upto 1."),
+                            tags$div(
+                              style = "font-size: 10px;",  # Adjust the font size as needed
+                              h5("While macros mainly determine the conformity of a food item, these parameters let you favor one or more macros over others.")
+                            ),
+                            fluidRow(
+                              column(4,
+                                     numericInput("protein_constant", HTML("Protein Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, \nthe more you prioritize calories\n from proteins in your diet.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%")
+                              ),
+                              column(4,
+                                     numericInput("carbs_constant", HTML("Carbs Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, \nthe more you prioritize calories\n from carbs in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+                              ),
+                              column(4,
+                                     numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, \nthe more you prioritize calories\n from fat in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+                              )
+                            ),
+                            
+                            # Optional advanced parameters for fiber, protein, sugar, and cholesterol
+                           
+                            h4("Specify optional thresholds for advanced parameters:"),
+                            fluidRow(
+                              column(3, numericInput("protein_threshold", "Protein Threshold (g):", NA, min = 0, step = 1)),
+                              column(3, selectInput("protein_comparison", "Comparison:", choices = c("<", ">"), selected = "<")),
+                              
+                              column(3, numericInput("fiber_threshold", "Fiber Threshold (g):", NA, min = 0, step = 1)),
+                              column(3, selectInput("fiber_comparison", "Comparison:", choices = c("<", ">"), selected = "<"))
+                            ),
+                            fluidRow(
+                              column(3, numericInput("sugar_threshold", "Sugar Threshold (g):", NA, min = 0, step = 1)),
+                              column(3, selectInput("sugar_comparison", "Comparison:", choices = c("<", ">"), selected = "<")),
+                              
+                              column(3, numericInput("cholesterol_threshold", "Cholesterol Threshold (mg):", NA, min = 0, step = 1)),
+                              column(3, selectInput("cholesterol_comparison", "Comparison:", choices = c("<", ">"), selected = "<"))
+                            ),
+                            
+                            actionButton("reset","Reset Parameters")
+                            )
                  )
         )
         , tabPanel("Data Tables",
@@ -206,6 +242,15 @@ ui <- fluidPage(
 
 # Define server logic
 server <- function(input, output, session) {
+ 
+   # ReactiveValues to store advanced parameters
+  advanced_params <- reactiveValues(
+    fiber = list(value = NA, comparison = "<"),
+    protein = list(value = NA, comparison = "<"),
+    sugar = list(value = NA, comparison = "<"),
+    cholesterol = list(value = NA, comparison = "<")
+  )
+  
   
   
   # Reactive expression for cleaned data
@@ -332,23 +377,20 @@ server <- function(input, output, session) {
   
   # Observe event for confirming choices
   observeEvent(input$confirmChoices, {
-    sum_constants <- input$protein_constant + input$carbs_constant + input$fat_constant
-    if (abs(sum_constants - 1) > 1.e-10) {
-      updateNumericInput(session, "protein_constant", value = 0.30)
-      updateNumericInput(session, "carbs_constant", value = 0.35)
-      updateNumericInput(session, "fat_constant", value = 0.35)
-      
-      showNotification(
-        "The constants (Protein, Carbs, Fat) have been reset to default values because their sum did not equal 1.",
-        duration = 5000,
-        type = "warning"
-      )
-      return()
-    }
+    # Check and reset constants if necessary (similar to your existing code)
     
     selected_diet_type <- input$diet_type
     calorie_budget_min <- input$calorie_budget[1]
     calorie_budget_max <- input$calorie_budget[2]
+    
+    advanced_params$fiber$value <- input$preferred_fiber
+    advanced_params$fiber$comparison <- input$fiber_comparison
+    advanced_params$protein$value <- input$preferred_protein
+    advanced_params$protein$comparison <- input$protein_comparison
+    advanced_params$sugar$value <- input$preferred_sugar
+    advanced_params$sugar$comparison <- input$sugar_comparison
+    advanced_params$cholesterol$value <- input$preferred_cholesterol
+    advanced_params$cholesterol$comparison <- input$cholesterol_comparison
     
     if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
       diet_data <- dietTable() %>%
@@ -371,19 +413,133 @@ server <- function(input, output, session) {
     }
     
     if (!is.null(macros)) {
+      # Apply optional thresholds
       updated_data <- macros %>%
         mutate(
-          ConformityScore = 100 - (0.30 * abs(protein - `Protein%`) + 0.35 * abs(carbs - `Carbs%`) + 0.35 * abs(fat - `Fat%`))
+          ConformityScore = 100 - (
+            input$protein_constant * abs(protein - `Protein%`) +
+              input$carbs_constant * abs(carbs - `Carbs%`) +
+              input$fat_constant * abs(fat - `Fat%`)
+          )
         ) %>%
-        filter(Calories >= calorie_budget_min, Calories <= calorie_budget_max) %>%
+        mutate(
+          ConformityScore = ConformityScore +
+            # Adjust for optional thresholds for protein
+            if (!is.na(input$protein_threshold)) {
+              if (input$protein_comparison == "<") {
+                ifelse(`Protein(g)` <= input$protein_threshold,
+                       (input$protein_threshold - `Protein(g)`)/ 100,
+                       0)
+              } else if (input$protein_comparison == ">") {
+                ifelse(`Protein(g)` >= input$protein_threshold,
+                       (`Protein(g)` - input$protein_threshold)/ 100,
+                       0)
+              } else {
+                0
+              }
+            } else {
+              0
+            } +
+            # Adjust for optional thresholds for fiber
+            if (!is.na(input$fiber_threshold)) {
+              if (input$fiber_comparison == "<") {
+                ifelse(`Fiber(g)` <= input$fiber_threshold,
+                       (input$fiber_threshold - `Fiber(g)`)/ 100,
+                       0)
+              } else if (input$fiber_comparison == ">") {
+                ifelse(`Fiber(g)` >= input$fiber_threshold,
+                       (`Fiber(g)` - input$fiber_threshold)/ 100,
+                       0)
+              } else {
+                0
+              }
+            } else {
+              0
+            } +
+            # Adjust for optional thresholds for sugars
+            if (!is.na(input$sugar_threshold)) {
+              if (input$sugar_comparison == "<") {
+                ifelse(`Sugars(g)` <= input$sugar_threshold,
+                       (input$sugar_threshold - `Sugars(g)`)/ 100,
+                       0)
+              } else if (input$sugar_comparison == ">") {
+                ifelse(`Sugars(g)` >= input$sugar_threshold,
+                       (`Sugars(g)` - input$sugar_threshold)/ 100,
+                       0)
+              } else {
+                0
+              }
+            } else {
+              0
+            } +
+            # Adjust for optional thresholds for cholesterol
+            if (!is.na(input$cholesterol_threshold)) {
+              if (input$cholesterol_comparison == "<") {
+                ifelse(`Cholesterol(mg)` <= input$cholesterol_threshold,
+                       (input$cholesterol_threshold - `Cholesterol(mg)`)/ 100,
+                       0)
+              } else if (input$cholesterol_comparison == ">") {
+                ifelse(`Cholesterol(mg)` >= input$cholesterol_threshold,
+                       (`Cholesterol(mg)` - input$cholesterol_threshold)/ 100,
+                       0)
+              } else {
+                0
+              }
+            } else {
+              0
+            }
+        ) %>%
+        filter(
+          # Filter rows based on protein_comparison and Protein(g) threshold
+          if (!is.na(input$protein_threshold)) {
+            !(input$protein_comparison == "<" & `Protein(g)` > input$protein_threshold) &
+              !(input$protein_comparison == ">" & `Protein(g)` < input$protein_threshold)
+          } else {
+            TRUE  # Include all rows if protein_threshold is NA
+          },
+          # Filter rows based on fiber_comparison and Fiber(g) threshold
+          if (!is.na(input$fiber_threshold)) {
+            !(input$fiber_comparison == "<" & `Fiber(g)` > input$fiber_threshold) &
+              !(input$fiber_comparison == ">" & `Fiber(g)` < input$fiber_threshold)
+          } else {
+            TRUE  # Include all rows if fiber_threshold is NA
+          },
+          # Filter rows based on sugar_comparison and Sugars(g) threshold
+          if (!is.na(input$sugar_threshold)) {
+            !(input$sugar_comparison == "<" & `Sugars(g)` > input$sugar_threshold) &
+              !(input$sugar_comparison == ">" & `Sugars(g)` < input$sugar_threshold)
+          } else {
+            TRUE  # Include all rows if sugar_threshold is NA
+          },
+          # Filter rows based on cholesterol_comparison and Cholesterol(mg) threshold
+          if (!is.na(input$cholesterol_threshold)) {
+            !(input$cholesterol_comparison == "<" & `Cholesterol(mg)` > input$cholesterol_threshold) &
+              !(input$cholesterol_comparison == ">" & `Cholesterol(mg)` < input$cholesterol_threshold)
+          } else {
+            TRUE  # Include all rows if cholesterol_threshold is NA
+          },
+          # Filter rows based on calorie budget
+          Calories >= calorie_budget_min,
+          Calories <= calorie_budget_max
+        )      %>%
         arrange(desc(ConformityScore)) %>%
-        select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`, `Protein(g)`, `Carbs(g)`, `TotalFat(g)`)
+        select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`, `Protein(g)`, `Carbs(g)`, `TotalFat(g)`, `Sugars(g)`, `Fiber(g)`, `Cholesterol(mg)`)
       
       output$conformityTable <- renderDT({
         datatable(updated_data) %>%
           formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4)
       })
     }
+    
+    
+    
+  })
+  
+  
+  observeEvent(input$reset, {
+    updateNumericInput(session, "protein_constant", value = 0.3)
+    updateNumericInput(session, "carbs_constant", value = 0.35)
+    updateNumericInput(session, "fat_constant", value = 0.35)
   })
   
   
