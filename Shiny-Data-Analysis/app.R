@@ -93,7 +93,6 @@ macros <- macros %>%
   rename( "Calories" = "TotalCalories_S")
 
 
-#Define UI 
 ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap"),
@@ -223,7 +222,13 @@ server <- function(input, output, session) {
   diet_types <- reactiveVal(c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"))
   
   # Reactive values to store user-entered macro data
-  user_macros <- reactiveVal(data.frame("Diet_Type" = character(), "Protein%" = numeric(), "Carbs%" = numeric(), "Fat%" = numeric(), stringsAsFactors = FALSE))
+  user_macros <- reactiveVal(data.frame(
+    "Diet_Type" = character(), 
+    "Protein_Percent" = numeric(), 
+    "Carbs_Percent" = numeric(), 
+    "Fat_Percent" = numeric(), 
+    stringsAsFactors = FALSE
+  ))
   
   
   # Render the cleaned datatable as a reactive output
@@ -251,7 +256,6 @@ server <- function(input, output, session) {
   observeEvent(input$add_macro, {
     total_percent <- input$protein_percent + input$carbs_percent + input$fat_percent
     if (total_percent == 100) {
-      # Check if macro_Diet_Type already exists or is a predefined diet type
       if (input$macro_Diet_Type %in% user_macros()$Diet_Type || input$macro_Diet_Type %in% diet_types()) {
         output$validation_message <- renderText({ "This Diet_Type is already used or it's a predefined diet type. Please choose a different Diet_Type." })
         return()
@@ -261,9 +265,9 @@ server <- function(input, output, session) {
       
       new_macro <- data.frame(
         "Diet_Type" = input$macro_Diet_Type,
-        "Protein%" = input$protein_percent,
-        "Carbs%" = input$carbs_percent,
-        "Fat%" = input$fat_percent,
+        "Protein_Percent" = input$protein_percent,
+        "Carbs_Percent" = input$carbs_percent,
+        "Fat_Percent" = input$fat_percent,
         stringsAsFactors = FALSE
       )
       # Concatenate new_macro with existing user_macros()
@@ -276,6 +280,7 @@ server <- function(input, output, session) {
       output$validation_message <- renderText({ "The percentages must sum up to 100%." })
     }
   })
+  
   
   # Delete selected macro from user_macros when button is clicked
   observeEvent(input$delete_macro, {
@@ -295,8 +300,9 @@ server <- function(input, output, session) {
       paging = FALSE,  # Disable pagination
       searching = FALSE,  # Disable search
       info = FALSE     # Disable info text
-    ), colnames = c("Diet_Type", "Protein%", "Carbs%", "Fat%"))
+    ), colnames = c("Diet Type", "Protein (%)", "Carbs (%)", "Fat (%)"))
   })
+  
   
   output$finalTable <- renderDT({
     datatable(macros, options = list(
@@ -326,67 +332,59 @@ server <- function(input, output, session) {
   
   # Observe event for confirming choices
   observeEvent(input$confirmChoices, {
-    # Reactive expression to enforce sum of constants to 1
     sum_constants <- input$protein_constant + input$carbs_constant + input$fat_constant
-   
-    if (abs(sum_constants - 1) > 1e-10) {
+    if (sum_constants != 1) {
       updateNumericInput(session, "protein_constant", value = 0.30)
       updateNumericInput(session, "carbs_constant", value = 0.35)
       updateNumericInput(session, "fat_constant", value = 0.35)
-      # Show notification for constants reset
+      
       showNotification(
         "The constants (Protein, Carbs, Fat) have been reset to default values because their sum did not equal 1.",
-        duration = 5000,  # Duration in milliseconds (e.g., 5000 ms = 5 seconds)
-        type = "warning"  # Notification type
+        duration = 5000,
+        type = "warning"
       )
-      
     }
-    
     
     selected_diet_type <- input$diet_type
     calorie_budget_min <- input$calorie_budget[1]
     calorie_budget_max <- input$calorie_budget[2]
     
-    
     if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
-      
       diet_data <- dietTable() %>%
-        filter(Diet_Type == selected_diet_type)  # Filter diet data for selected type
+        filter(Diet_Type == selected_diet_type)
       if (nrow(diet_data) == 0) {
-        cat("Selected diet type not found in diet data.\n")
-        return()  # Exit function if diet type not found
+        return()
       }
       protein <- diet_data$`Protein %`
       carbs <- diet_data$`Carbs %`
       fat <- diet_data$`Fat %`
     } else {
-      cat("in user_macros\n")
-      user_macro <- user_macros() %>% 
+      user_macro <- user_macros() %>%
         filter(Diet_Type == selected_diet_type)
       if (nrow(user_macro) == 0) {
-        cat("Selected diet type not found in user macros.\n")
-        return()  # Exit function if diet type not found
+        return()
       }
-      protein <- user_macro$`Protein%`
-      carbs <- user_macro$`Carbs%`
-      fat <- user_macro$`Fat%`
+      protein <- user_macro$`Protein_Percent`
+      carbs <- user_macro$`Carbs_Percent`
+      fat <- user_macro$`Fat_Percent`
     }
     
     if (!is.null(macros)) {
       updated_data <- macros %>%
         mutate(
           ConformityScore = 100 - (0.30 * abs(protein - `Protein%`) + 0.35 * abs(carbs - `Carbs%`) + 0.35 * abs(fat - `Fat%`))
-        )%>%
-        filter(Calories >= calorie_budget_min, Calories <= calorie_budget_max)%>%
+        ) %>%
+        filter(Calories >= calorie_budget_min, Calories <= calorie_budget_max) %>%
         arrange(desc(ConformityScore)) %>%
-        select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`,`Protein(g)`, `Carbs(g)`, `TotalFat(g)`) 
+        select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`, `Protein(g)`, `Carbs(g)`, `TotalFat(g)`)
       
       output$conformityTable <- renderDT({
-        datatable(updated_data ) %>%
-          formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4) 
+        datatable(updated_data) %>%
+          formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4)
       })
     }
   })
+  
   
   
 }
