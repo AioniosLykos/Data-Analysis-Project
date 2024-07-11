@@ -86,7 +86,7 @@ macros <- macros %>%
   mutate("Fat%"= (.$calFromFat_S/.$TotalCalories_S)*100) %>%
   mutate("Carbs%"= (.$calFromCarbs_S/.$TotalCalories_S)*100) %>%
   mutate("Protein%"= (.$calFromProtein_S/.$TotalCalories_S)*100) %>%
-  select("Company" , "Item","TotalCalories_S", "Protein%", "Carbs%", "Fat%") %>%
+  select("Company" , "Item","TotalCalories_S", "Protein%", "Carbs%", "Fat%","Protein(g)", "TotalFat(g)","Carbs(g)") %>%
   rename( "Calories" = "TotalCalories_S")
 
 
@@ -105,8 +105,8 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       selectInput("diet_type", "Select Diet Type:",
-                  choices = c("Low Carb", "Low Fat", "Balanced1", "Balanced2", "High Carb"),
-                  selected = "Low Carb"),
+                  choices = c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"),
+                  selected = "Low_Carb"),
       
       # Two-sided interval for calorie budget
       sliderInput("calorie_budget", "Calorie Budget:",
@@ -193,27 +193,27 @@ server <- function(input, output, session) {
   
   # Reactive expression for diet table
   dietTable <- reactive({
-    # Replace with your dietTable reactive expression or function
-    # diet_original  # Assuming diet_original is read from Diet.csv
-    diet_original
+    diet_original  # Assuming diet_original is read from Diet.csv
   })
   
   # Reactive value to store diet types
-  diet_types <- reactiveVal(c("Low Carb", "Low Fat", "Balanced1", "Balanced2", "High Carb"))
+  diet_types <- reactiveVal(c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"))
   
   # Reactive values to store user-entered macro data
-  user_macros <- reactiveVal(data.frame("Diet_Type" = character(), "Protein%" = numeric() , "Carbs%" = numeric(), "Fat%" = numeric(), stringsAsFactors = FALSE))
+  user_macros <- reactiveVal(data.frame("Diet_Type" = character(), "Protein%" = numeric(), "Carbs%" = numeric(), "Fat%" = numeric(), stringsAsFactors = FALSE))
   
   # Render the cleaned datatable as a reactive output
   output$cleanedTable <- renderDT({
     cleaned_data()
   })
+  
   output$original <- renderDT(FFdata_original)
   output$macrosTable <- renderDT(macros)
   
   output$title1 <- renderUI({
     HTML('<h3 style="color:blue; font-style:italic;">Macros of Preselected Diet Types</h3>')
   })
+  
   # Render the diet table as a reactive output
   output$dietTable <- renderDT({
     dietTable()
@@ -265,7 +265,6 @@ server <- function(input, output, session) {
     }
   })
   
-
   # Render the user-entered macro table
   output$macro_table <- renderDT({
     datatable(user_macros(), options = list(
@@ -275,7 +274,6 @@ server <- function(input, output, session) {
     ), colnames = c("Diet_Type", "Protein%", "Carbs%", "Fat%"))
   })
   
-  
   output$finalTable <- renderDT({
     datatable(macros, options = list(
       columnDefs =  list(
@@ -284,6 +282,7 @@ server <- function(input, output, session) {
     )) %>%
       formatRound(columns = c("Protein%", "Carbs%", "Fat%"), digits = 4)
   })
+  
   # Dynamically render selectInput "select_diet_to_delete"
   output$select_diet_to_delete <- renderUI({
     selectInput("select_diet_to_delete", "",
@@ -301,10 +300,53 @@ server <- function(input, output, session) {
     updateSelectInput(session, "diet_type", choices = diet_types())
   })
   
-  
-  
-  
+  # Observe event for confirming choices
+  observeEvent(input$confirmChoices, {
+    selected_diet_type <- input$diet_type
+    calorie_budget_min <- input$calorie_budget[1]
+    calorie_budget_max <- input$calorie_budget[2]
+    
+    cat("Selected Diet Type:", selected_diet_type, "\n")
+    cat("Calorie Budget Min:", calorie_budget_min, "\n")
+    cat("Calorie Budget Max:", calorie_budget_max, "\n")
+    
+    if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
+      cat("in diet\n")
+      diet_data <- dietTable() %>%
+        filter(Diet_Type == selected_diet_type)  # Filter diet data for selected type
+      if (nrow(diet_data) == 0) {
+        cat("Selected diet type not found in diet data.\n")
+        return()  # Exit function if diet type not found
+      }
+      protein <- diet_data$`Protein %`
+      carbs <- diet_data$`Carbs %`
+      fat <- diet_data$`Fat %`
+    } else {
+      cat("in user_macros\n")
+      user_macro <- user_macros() %>% 
+        filter(Diet_Type == selected_diet_type)
+      if (nrow(user_macro) == 0) {
+        cat("Selected diet type not found in user macros.\n")
+        return()  # Exit function if diet type not found
+      }
+      protein <- user_macro$`Protein%`
+      carbs <- user_macro$`Carbs%`
+      fat <- user_macro$`Fat%`
+    }
+    
+    if (!is.null(macros)) {
+      updated_data <- macros %>%
+        mutate(
+          ConformityScore = 100 - (0.30 * abs(protein - `Protein%`) + 0.37 * abs(carbs - `Carbs%`) + 0.33 * abs(fat - `Fat%`))
+        ) %>% filter()
+      
+      output$conformityTable <- renderDT({
+        datatable(updated_data)
+      })
+    }
+  })
   
 }
+
 # Run the application 
 shinyApp(ui = ui, server = server)
