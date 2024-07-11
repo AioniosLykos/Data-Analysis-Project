@@ -109,6 +109,7 @@ ui <- fluidPage(
   ),
   sidebarLayout(
     sidebarPanel(
+      width = 5 ,
       selectInput("diet_type", "Select Diet Type:",
                   choices = c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"),
                   selected = "Low_Carb"),
@@ -133,6 +134,7 @@ ui <- fluidPage(
       actionButton("confirmChoices", "Confirm Your Choices")
     ),
     mainPanel(
+      width = 7,
       tabsetPanel(
         tabPanel("Diet",
                  tabsetPanel(
@@ -222,7 +224,7 @@ server <- function(input, output, session) {
   # Reactive values to store user-entered macro data
   user_macros <- reactiveVal(data.frame("Diet_Type" = character(), "Protein%" = numeric(), "Carbs%" = numeric(), "Fat%" = numeric(), stringsAsFactors = FALSE))
   
-
+  
   # Render the cleaned datatable as a reactive output
   output$cleanedTable <- renderDT({
     cleaned_data()
@@ -337,7 +339,7 @@ server <- function(input, output, session) {
       duration = 5000,  # Duration in milliseconds (e.g., 5000 ms = 5 seconds)
       type = "warning"  # Notification type
     )
-  
+    
     
     selected_diet_type <- input$diet_type
     calorie_budget_min <- input$calorie_budget[1]
