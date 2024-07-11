@@ -13,6 +13,9 @@ library(flexdashboard)
 library(patchwork)
 library(gridExtra)
 
+library(shiny)
+library(shinyBS)
+
 FFdata_original <- read_delim("~/AnalysisProject/FastFoodNutritionMenuV3.csv")
 diet_original <- read_delim("~/AnalysisProject/Diet.csv")
 
@@ -90,10 +93,12 @@ macros <- macros %>%
   rename( "Calories" = "TotalCalories_S")
 
 
-# Define UI for application that draws a histogram
 ui <- fluidPage(
   tags$head(
-    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap")
+    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap"),
+    tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"),
+    tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"),
+    tags$script(src = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js")
   ),
   fluidRow(
     column(
@@ -112,6 +117,19 @@ ui <- fluidPage(
       sliderInput("calorie_budget", "Calorie Budget:",
                   min = 0, max = 1500, value = c(300, 700),
                   step = 25, sep = ""),
+      
+      fluidRow(
+        column(4,
+               numericInput("protein_constant", HTML("Protein Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 1, the more you penalize calories from proteins in your diet. Protein, Carbs, and Fat constants must sum up to 1. '></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%")
+        ),
+        column(4,
+               numericInput("carbs_constant", HTML("Carbs Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 1, the more you penalize calories from carbs in your diet. Protein, Carbs, and Fat constants must sum up to 1. '></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+        ),
+        column(4,
+               numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 1, the more you penalize calories from  in your diet. Protein, Carbs, and Fat constants must sum up to 1. '></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+        )
+      ),
+      
       actionButton("confirmChoices", "Confirm Your Choices")
     ),
     mainPanel(
@@ -129,15 +147,15 @@ ui <- fluidPage(
                               style = "display: flex; justify-content: space-between;",
                               div(
                                 h4(""),
-                                numericInput("protein_percent", "Protein (%)", value = 0, min = 0, max = 100, step = 1)
+                                numericInput("protein_percent", "Protein (%)", value = 0, min = 0, max = 100, step = 1, width = "150%")
                               ),
                               div(
                                 h4(""),
-                                numericInput("carbs_percent", "Carbs (%)", value = 0, min = 0, max = 100, step = 1)
+                                numericInput("carbs_percent", "Carbs (%)", value = 0, min = 0, max = 100, step = 1, width = "150%")
                               ),
                               div(
                                 h4(""),
-                                numericInput("fat_percent", "Fat (%)", value = 0, min = 0, max = 100, step = 1)
+                                numericInput("fat_percent", "Fat (%)", value = 0, min = 0, max = 100, step = 1, width = "150%")
                               )
                             ),
                             actionButton("add_macro", "Add Diet"),
@@ -167,7 +185,6 @@ ui <- fluidPage(
         , tabPanel("Data Tables",
                    tabsetPanel(
                      tabPanel("Raw Data",
-                              
                               DTOutput("original")
                      ),
                      tabPanel("Cleaned Data",
@@ -182,10 +199,13 @@ ui <- fluidPage(
                    )
         ))
     )
-  ))
+  )
+)
 
 # Define server logic
 server <- function(input, output, session) {
+  
+  
   # Reactive expression for cleaned data
   cleaned_data <- reactive({
     clean_data(FFdata_original)
@@ -202,6 +222,7 @@ server <- function(input, output, session) {
   # Reactive values to store user-entered macro data
   user_macros <- reactiveVal(data.frame("Diet_Type" = character(), "Protein%" = numeric(), "Carbs%" = numeric(), "Fat%" = numeric(), stringsAsFactors = FALSE))
   
+
   # Render the cleaned datatable as a reactive output
   output$cleanedTable <- renderDT({
     cleaned_data()
@@ -302,13 +323,26 @@ server <- function(input, output, session) {
   
   # Observe event for confirming choices
   observeEvent(input$confirmChoices, {
+    # Reactive expression to enforce sum of constants to 1
+    sum_constants <- input$protein_constant + input$carbs_constant + input$fat_constant
+    if (sum_constants != 1) {
+      updateNumericInput(session, "protein_constant", value = 0.30)
+      updateNumericInput(session, "carbs_constant", value = 0.35)
+      updateNumericInput(session, "fat_constant", value = 0.35)
+    }
+    
+    # Show notification for constants reset
+    showNotification(
+      "The constants (Protein, Carbs, Fat) have been reset to default values because their sum did not equal 1.",
+      duration = 5000,  # Duration in milliseconds (e.g., 5000 ms = 5 seconds)
+      type = "warning"  # Notification type
+    )
+  
+    
     selected_diet_type <- input$diet_type
     calorie_budget_min <- input$calorie_budget[1]
     calorie_budget_max <- input$calorie_budget[2]
     
-    cat("Selected Diet Type:", selected_diet_type, "\n")
-    cat("Calorie Budget Min:", calorie_budget_min, "\n")
-    cat("Calorie Budget Max:", calorie_budget_max, "\n")
     
     if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
       cat("in diet\n")
@@ -349,6 +383,7 @@ server <- function(input, output, session) {
       })
     }
   })
+  
   
 }
 
