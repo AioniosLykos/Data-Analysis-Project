@@ -333,7 +333,7 @@ server <- function(input, output, session) {
   # Observe event for confirming choices
   observeEvent(input$confirmChoices, {
     sum_constants <- input$protein_constant + input$carbs_constant + input$fat_constant
-    if (sum_constants != 1) {
+    if (abs(sum_constants - 1) > 1.e-10) {
       updateNumericInput(session, "protein_constant", value = 0.30)
       updateNumericInput(session, "carbs_constant", value = 0.35)
       updateNumericInput(session, "fat_constant", value = 0.35)
@@ -343,6 +343,7 @@ server <- function(input, output, session) {
         duration = 5000,
         type = "warning"
       )
+      return()
     }
     
     selected_diet_type <- input$diet_type
@@ -384,7 +385,6 @@ server <- function(input, output, session) {
       })
     }
   })
-  
   
   
 }
