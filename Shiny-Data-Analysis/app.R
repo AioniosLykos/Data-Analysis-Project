@@ -337,11 +337,15 @@ server <- function(input, output, session) {
     if (!is.null(macros)) {
       updated_data <- macros %>%
         mutate(
-          ConformityScore = 100 - (0.30 * abs(protein - `Protein%`) + 0.37 * abs(carbs - `Carbs%`) + 0.33 * abs(fat - `Fat%`))
-        ) %>% filter()
+          ConformityScore = 100 - (0.30 * abs(protein - `Protein%`) + 0.35 * abs(carbs - `Carbs%`) + 0.35 * abs(fat - `Fat%`))
+        )%>%
+        filter(Calories >= calorie_budget_min, Calories <= calorie_budget_max)%>%
+        arrange(desc(ConformityScore)) %>%
+        select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`,`Protein(g)`, `Carbs(g)`, `TotalFat(g)`) 
       
       output$conformityTable <- renderDT({
-        datatable(updated_data)
+        datatable(updated_data ) %>%
+          formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4) 
       })
     }
   })
