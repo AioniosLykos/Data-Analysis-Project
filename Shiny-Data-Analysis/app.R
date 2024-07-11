@@ -117,20 +117,71 @@ ui <- fluidPage(
   ),
   sidebarLayout(
     sidebarPanel(
-      width = 5 ,
-      selectInput("diet_type", "Select Diet Type:",
-                  choices = c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"),
-                  selected = "Low_Carb"),
+      width = 6,
       
-      # Two-sided interval for calorie budget
-      sliderInput("calorie_budget", "Calorie Budget:",
-                  min = 0, max = 1500, value = c(300, 700),
-                  step = 25, sep = ""),
+      tabsetPanel(
+        tabPanel("Base parameters", 
+                 selectInput("diet_type", "Select Diet Type:",
+                             choices = c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"),
+                             selected = "Low_Carb"),
+                 
+                 # Two-sided interval for calorie budget
+                 sliderInput("calorie_budget", "Calorie Budget:",
+                             min = 0, max = 1500, value = c(300, 700),
+                             step = 25, sep = "")
+        ),
+        tabPanel("Advanced Parameters",
+                 h3("Advanced Options for Tailored Results"),
+                 div(
+                   style = "display: flex; justify-content: right;",  # Center align the content horizontally
+                   div(
+                     style = "margin-right: 0px;",  # Adjust margin-right to create space
+                     actionButton("reset", "Reset Parameters")
+                   )
+                 ),
+                 h4("The following parameters are used in Conformity Score calculations and must sum up to 1."),
+                 tags$div(
+                   style = "font-size: 10px;",  # Adjust the font size as needed
+                   h5("While macros mainly determine the conformity of a food item, these parameters let you favor one or more macros over others.")
+                 ),
+                 fluidRow(
+                   column(4,
+                          numericInput("protein_constant", HTML("Protein Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from proteins in your diet.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%")
+                   ),
+                   column(4,
+                          numericInput("carbs_constant", HTML("Carbs Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from carbs in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+                   ),
+                   column(4,
+                          numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from fat in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+                   )
+                 ),
+                 
+                 # Optional advanced parameters for fiber, protein, sugar, and cholesterol
+                 h4("Specify optional thresholds for advanced filtering and Conformity Score adjustments:"),
+                 fluidRow(
+                   column(6, numericInput("protein_threshold", "Protein Intake(g):", NA, min = 0, step = 1)),
+                   column(6, selectInput("protein_comparison", "Comparison:", choices = c("<", ">"), selected = ">")),
+                 ), 
+                 fluidRow(
+                   column(6, numericInput("fiber_threshold", "Fiber Intake(g):", NA, min = 0, step = 1)),
+                   column(6, selectInput("fiber_comparison", "Comparison:", choices = c("<", ">"), selected = ">"))
+                 ),
+                 fluidRow(
+                   column(6, numericInput("sugar_threshold", "Sugar Intake(g):", NA, min = 0, step = 1)),
+                   column(6, selectInput("sugar_comparison", "Comparison:", choices = c("<", ">"), selected = "<")),
+                 ),
+                 fluidRow(
+                   column(6, numericInput("cholesterol_threshold", "Cholesterol Intake(mg):", NA, min = 0, step = 1)),
+                   column(6, selectInput("cholesterol_comparison", "Comparison:", choices = c("<", ">"), selected = "<"))
+                 )
+        )
+      ), 
       
-      actionButton("confirmChoices", "Confirm Your Choices")
+      actionButton("confirmChoices", "Confirm My Choices")
+      
     ),
     mainPanel(
-      width = 7,
+      width = 6,
       tabsetPanel(
         tabPanel("Diet",
                  tabsetPanel(
@@ -140,7 +191,7 @@ ui <- fluidPage(
                    ),
                    tabPanel("Personalized Data Entry",
                             h3("Enter your macro data"),
-                            textInput("macro_Diet_Type", "Diet_Type:", ""),
+                            textInput("macro_Diet_Type", "Diet Name:", ""),
                             div(
                               style = "display: flex; justify-content: space-between;",
                               div(
@@ -169,7 +220,7 @@ ui <- fluidPage(
                               div(
                                 class = "col-md-6",
                                 h3(""),
-                                actionButton("delete_macro", "Confirm Delete")
+                                actionButton("delete_macro", "Delete Diet")
                               )
                             ),
                             br(), # New line for spacing
@@ -177,47 +228,7 @@ ui <- fluidPage(
                             br(), # New line for spacing
                             textOutput("validation_message"),
                             br() # New line for spacing
-                   ),
-                   tabPanel("Advanced Parameters",
-                            h3("Advanced Options for Tailored Results"),
-                            br(),
-                            h4("The following parameters are used in Conformity Score calculations and must sum upto 1."),
-                            tags$div(
-                              style = "font-size: 10px;",  # Adjust the font size as needed
-                              h5("While macros mainly determine the conformity of a food item, these parameters let you favor one or more macros over others.")
-                            ),
-                            fluidRow(
-                              column(4,
-                                     numericInput("protein_constant", HTML("Protein Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, \nthe more you prioritize calories\n from proteins in your diet.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%")
-                              ),
-                              column(4,
-                                     numericInput("carbs_constant", HTML("Carbs Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, \nthe more you prioritize calories\n from carbs in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
-                              ),
-                              column(4,
-                                     numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, \nthe more you prioritize calories\n from fat in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
-                              )
-                            ),
-                            
-                            # Optional advanced parameters for fiber, protein, sugar, and cholesterol
-                           
-                            h4("Specify optional thresholds for advanced parameters:"),
-                            fluidRow(
-                              column(3, numericInput("protein_threshold", "Protein Threshold (g):", NA, min = 0, step = 1)),
-                              column(3, selectInput("protein_comparison", "Comparison:", choices = c("<", ">"), selected = "<")),
-                              
-                              column(3, numericInput("fiber_threshold", "Fiber Threshold (g):", NA, min = 0, step = 1)),
-                              column(3, selectInput("fiber_comparison", "Comparison:", choices = c("<", ">"), selected = "<"))
-                            ),
-                            fluidRow(
-                              column(3, numericInput("sugar_threshold", "Sugar Threshold (g):", NA, min = 0, step = 1)),
-                              column(3, selectInput("sugar_comparison", "Comparison:", choices = c("<", ">"), selected = "<")),
-                              
-                              column(3, numericInput("cholesterol_threshold", "Cholesterol Threshold (mg):", NA, min = 0, step = 1)),
-                              column(3, selectInput("cholesterol_comparison", "Comparison:", choices = c("<", ">"), selected = "<"))
-                            ),
-                            
-                            actionButton("reset","Reset Parameters")
-                            )
+                   )
                  )
         )
         , tabPanel("Data Tables",
