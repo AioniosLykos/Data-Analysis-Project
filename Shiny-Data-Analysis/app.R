@@ -157,22 +157,23 @@ ui <- fluidPage(
                  ),
                  
                  # Optional advanced parameters for fiber, protein, sugar, and cholesterol
-                 h4("Specify optional thresholds for advanced filtering and Conformity Score adjustments:"),
+                 h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed meaning both endpoints are included.\n If only one of the endpoints has an input, the filter will show values > min  or values < max for that parameter.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%" ),
+                 
                  fluidRow(
-                   column(6, numericInput("protein_threshold", "Protein Intake(g):", NA, min = 0, step = 1)),
-                   column(6, selectInput("protein_comparison", "Comparison:", choices = c("<", ">"), selected = ">")),
+                   column(6, numericInput("protein_min", "Minimum Protein Intake(g):", NA, min = 0, step = 1)),
+                   column(6, numericInput("protein_max", "Maximum Protein Intake(g):",  NA, min = 0, step = 1)),
                  ), 
                  fluidRow(
-                   column(6, numericInput("fiber_threshold", "Fiber Intake(g):", NA, min = 0, step = 1)),
-                   column(6, selectInput("fiber_comparison", "Comparison:", choices = c("<", ">"), selected = ">"))
+                   column(6, numericInput("fiber_min", "Minimum Fiber Intake(g):", NA, min = 0, step = 1)),
+                   column(6, numericInput("fiber_max", "Minimum Fiber Intake(g):",  NA, min = 0, step = 1))
                  ),
                  fluidRow(
-                   column(6, numericInput("sugar_threshold", "Sugar Intake(g):", NA, min = 0, step = 1)),
-                   column(6, selectInput("sugar_comparison", "Comparison:", choices = c("<", ">"), selected = "<")),
+                   column(6, numericInput("sugar_min", "Minimum Sugar Intake(g):", NA, min = 0, step = 1)),
+                   column(6, numericInput("sugar_max", "Maximum Sugar Intake(g):",  NA, min = 0, step = 1)),
                  ),
                  fluidRow(
-                   column(6, numericInput("cholesterol_threshold", "Cholesterol Intake(mg):", NA, min = 0, step = 1)),
-                   column(6, selectInput("cholesterol_comparison", "Comparison:", choices = c("<", ">"), selected = "<"))
+                   column(6, numericInput("cholesterol_min", "Minimum Cholesterol Intake(mg):", NA, min = 0, step = 1)),
+                   column(6, numericInput("cholesterol_max", "Minimum Cholesterol Intake(mg):",  NA, min = 0, step = 1))
                  )
         )
       ), 
@@ -242,11 +243,19 @@ ui <- fluidPage(
                      tabPanel("Macros%",
                               DTOutput("finalTable")
                      ),
-                     tabPanel("Conformity Score within Calorie Budget",
-                              DTOutput("conformityTable")
-                     )
+                     
                    )
-        ))
+        ), tabPanel("Analysis",
+                      tabsetPanel(
+                        tabPanel("Conformity Score Table",
+                               DTOutput("conformityTable"),
+                               h3("Parameter Dependent Table"),
+                               h5("The updated table will appear once the choices are confirmed.")
+                        )
+                    )
+                    )
+        
+      )
     )
   )
 )
@@ -395,13 +404,13 @@ server <- function(input, output, session) {
     calorie_budget_max <- input$calorie_budget[2]
     
     advanced_params$fiber$value <- input$preferred_fiber
-    advanced_params$fiber$comparison <- input$fiber_comparison
+    advanced_params$fiber$comparison <- input$fiber_max
     advanced_params$protein$value <- input$preferred_protein
-    advanced_params$protein$comparison <- input$protein_comparison
+    advanced_params$protein$comparison <- input$protein_max
     advanced_params$sugar$value <- input$preferred_sugar
-    advanced_params$sugar$comparison <- input$sugar_comparison
+    advanced_params$sugar$comparison <- input$sugar_max
     advanced_params$cholesterol$value <- input$preferred_cholesterol
-    advanced_params$cholesterol$comparison <- input$cholesterol_comparison
+    advanced_params$cholesterol$comparison <- input$cholesterol_max
     
     if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
       diet_data <- dietTable() %>%
@@ -433,101 +442,62 @@ server <- function(input, output, session) {
               input$fat_constant * abs(fat - `Fat%`)
           )
         ) %>%
-        mutate(
-          ConformityScore = ConformityScore +
-            # Adjust for optional thresholds for protein
-            if (!is.na(input$protein_threshold)) {
-              if (input$protein_comparison == "<") {
-                ifelse(`Protein(g)` <= input$protein_threshold,
-                       (input$protein_threshold - `Protein(g)`)/ 100,
-                       0)
-              } else if (input$protein_comparison == ">") {
-                ifelse(`Protein(g)` >= input$protein_threshold,
-                       (`Protein(g)` - input$protein_threshold)/ 100,
-                       0)
-              } else {
-                0
-              }
-            } else {
-              0
-            } +
-            # Adjust for optional thresholds for fiber
-            if (!is.na(input$fiber_threshold)) {
-              if (input$fiber_comparison == "<") {
-                ifelse(`Fiber(g)` <= input$fiber_threshold,
-                       (input$fiber_threshold - `Fiber(g)`)/ 100,
-                       0)
-              } else if (input$fiber_comparison == ">") {
-                ifelse(`Fiber(g)` >= input$fiber_threshold,
-                       (`Fiber(g)` - input$fiber_threshold)/ 100,
-                       0)
-              } else {
-                0
-              }
-            } else {
-              0
-            } +
-            # Adjust for optional thresholds for sugars
-            if (!is.na(input$sugar_threshold)) {
-              if (input$sugar_comparison == "<") {
-                ifelse(`Sugars(g)` <= input$sugar_threshold,
-                       (input$sugar_threshold - `Sugars(g)`)/ 100,
-                       0)
-              } else if (input$sugar_comparison == ">") {
-                ifelse(`Sugars(g)` >= input$sugar_threshold,
-                       (`Sugars(g)` - input$sugar_threshold)/ 100,
-                       0)
-              } else {
-                0
-              }
-            } else {
-              0
-            } +
-            # Adjust for optional thresholds for cholesterol
-            if (!is.na(input$cholesterol_threshold)) {
-              if (input$cholesterol_comparison == "<") {
-                ifelse(`Cholesterol(mg)` <= input$cholesterol_threshold,
-                       (input$cholesterol_threshold - `Cholesterol(mg)`)/ 100,
-                       0)
-              } else if (input$cholesterol_comparison == ">") {
-                ifelse(`Cholesterol(mg)` >= input$cholesterol_threshold,
-                       (`Cholesterol(mg)` - input$cholesterol_threshold)/ 100,
-                       0)
-              } else {
-                0
-              }
-            } else {
-              0
-            }
-        ) %>%
         filter(
-          # Filter rows based on protein_comparison and Protein(g) threshold
-          if (!is.na(input$protein_threshold)) {
-            !(input$protein_comparison == "<" & `Protein(g)` > input$protein_threshold) &
-              !(input$protein_comparison == ">" & `Protein(g)` < input$protein_threshold)
+          # Filter rows based on protein_max and protein_min
+          if (!is.na(input$protein_min) && is.na(input$protein_max)) {
+            (`Protein(g)` >= input$protein_min) 
           } else {
-            TRUE  # Include all rows if protein_threshold is NA
+            if (is.na(input$protein_min) && !is.na(input$protein_max)) {
+              (`Protein(g)` <= input$protein_max) 
+            } else {
+              if (!is.na(input$protein_min) && !is.na(input$protein_max)) {
+                ((`Protein(g)` >= input$protein_min) & (`Protein(g)` <= input$protein_max))
+              }else {
+                TRUE  # Include all rows if protein_min and protein_max are NA
+              }
+            } 
           },
-          # Filter rows based on fiber_comparison and Fiber(g) threshold
-          if (!is.na(input$fiber_threshold)) {
-            !(input$fiber_comparison == "<" & `Fiber(g)` > input$fiber_threshold) &
-              !(input$fiber_comparison == ">" & `Fiber(g)` < input$fiber_threshold)
+          # Filter rows based on fiber_max and fiber_min
+          if (!is.na(input$fiber_min) && is.na(input$fiber_max)) {
+            (`Fiber(g)` >= input$fiber_min) 
           } else {
-            TRUE  # Include all rows if fiber_threshold is NA
+            if (is.na(input$fiber_min) && !is.na(input$fiber_max)) {
+              (`Fiber(g)` <= input$fiber_max) 
+            } else {
+              if (!is.na(input$fiber_min) && !is.na(input$fiber_max)) {
+                ((`Fiber(g)` >= input$fiber_min) & (`Fiber(g)` <= input$fiber_max))
+              }else {
+                TRUE  # Include all rows if protein_min and protein_max are NA
+              }
+            } 
           },
-          # Filter rows based on sugar_comparison and Sugars(g) threshold
-          if (!is.na(input$sugar_threshold)) {
-            !(input$sugar_comparison == "<" & `Sugars(g)` > input$sugar_threshold) &
-              !(input$sugar_comparison == ">" & `Sugars(g)` < input$sugar_threshold)
+          # Filter rows based on sugar_max and sugar_min
+          if (!is.na(input$sugar_min) && is.na(input$sugar_max)) {
+            (`Sugars(g)` >= input$sugar_min) 
           } else {
-            TRUE  # Include all rows if sugar_threshold is NA
+            if (is.na(input$sugar_min) && !is.na(input$sugar_max)) {
+              (`Sugars(g)` <= input$sugar_max) 
+            } else {
+              if (!is.na(input$sugar_min) && !is.na(input$sugar_max)) {
+                ((`Sugars(g)` >= input$sugar_min) & (`Sugars(g)` <= input$sugar_max))
+              }else {
+                TRUE  # Include all rows if protein_min and protein_max are NA
+              }
+            } 
           },
-          # Filter rows based on cholesterol_comparison and Cholesterol(mg) threshold
-          if (!is.na(input$cholesterol_threshold)) {
-            !(input$cholesterol_comparison == "<" & `Cholesterol(mg)` > input$cholesterol_threshold) &
-              !(input$cholesterol_comparison == ">" & `Cholesterol(mg)` < input$cholesterol_threshold)
+          # Filter rows based on cholesterol_max and cholesterol_min
+          if (!is.na(input$cholesterol_min) && is.na(input$cholesterol_max)) {
+            (`Cholesterol(mg)` >= input$cholesterol_min) 
           } else {
-            TRUE  # Include all rows if cholesterol_threshold is NA
+            if (is.na(input$cholesterol_min) && !is.na(input$cholesterol_max)) {
+              (`Cholesterol(mg)` <= input$cholesterol_max) 
+            } else {
+              if (!is.na(input$cholesterol_min) && !is.na(input$cholesterol_max)) {
+                ((`Cholesterol(mg)` >= input$cholesterol_min) & (`Cholesterol(mg)` <= input$cholesterol_max))
+              }else {
+                TRUE  # Include all rows if protein_min and protein_max are NA
+              }
+            } 
           },
           # Filter rows based on calorie budget
           Calories >= calorie_budget_min,
@@ -542,6 +512,13 @@ server <- function(input, output, session) {
       })
     }
     
+    if(!(input$protein_constant + input$carbs_constant +input$fat_constant ==1)){
+      updateNumericInput(session, "protein_constant", value = 0.3)
+      updateNumericInput(session, "carbs_constant", value = 0.35)
+      updateNumericInput(session, "fat_constant", value = 0.35)
+      
+       ###############################Continuee
+    }
     
     
   })
@@ -551,6 +528,16 @@ server <- function(input, output, session) {
     updateNumericInput(session, "protein_constant", value = 0.3)
     updateNumericInput(session, "carbs_constant", value = 0.35)
     updateNumericInput(session, "fat_constant", value = 0.35)
+    
+    updateNumericInput(session, "protein_min", value = NA)
+    updateNumericInput(session, "fiber_min", value = NA)
+    updateNumericInput(session, "sugar_min", value = NA)
+    updateNumericInput(session, "cholesterol_min", value = NA)
+    
+    updateNumericInput(session, "protein_max", value = NA)
+    updateNumericInput(session, "fiber_max", value = NA)
+    updateNumericInput(session, "sugar_max", value = NA)
+    updateNumericInput(session, "cholesterol_max", value = NA)
   })
   
   
