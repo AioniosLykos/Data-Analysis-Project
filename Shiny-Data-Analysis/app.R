@@ -13,9 +13,10 @@ library(flexdashboard)
 library(patchwork)
 library(gridExtra)
 library(magrittr)
-
 library(shiny)
 library(shinyBS)
+library(shinyWidgets)
+
 
 FFdata_original <- read_delim("~/AnalysisProject/FastFoodNutritionMenuV3.csv")
 diet_original <- read_delim("~/AnalysisProject/Diet.csv")
@@ -174,7 +175,16 @@ ui <- fluidPage(
                  fluidRow(
                    column(6, numericInput("cholesterol_min", "Minimum Cholesterol Intake(mg):", NA, min = 0, step = 1)),
                    column(6, numericInput("cholesterol_max", "Minimum Cholesterol Intake(mg):",  NA, min = 0, step = 1))
-                 )
+                 ),
+                 sliderTextInput(
+                   "conformity_range",
+                   "Show Items with Conformity Score within",
+                   choices = seq(from = 100, to = 0, by = -0.1),
+                   selected = 90,
+                   width = "100%",
+                   post = ""
+                 )  
+                 
         )
       ), 
       
@@ -242,18 +252,22 @@ ui <- fluidPage(
                      ),
                      tabPanel("Macros%",
                               DTOutput("finalTable")
-                     ),
+                     )
                      
                    )
         ), tabPanel("Analysis",
-                      tabsetPanel(
-                        tabPanel("Conformity Score Table",
+                    tabsetPanel(
+                      tabPanel("Conformity Score Table",
                                DTOutput("conformityTable"),
                                h3("Parameter Dependent Table"),
                                h5("The updated table will appear once the choices are confirmed.")
-                        )
+                      ),
+                      tabPanel("Graphs",
+                               plotOutput("plotConformity", height = "500px", width = "650px")
+                        
+                      )
                     )
-                    )
+        )
         
       )
     )
@@ -262,8 +276,8 @@ ui <- fluidPage(
 
 # Define server logic
 server <- function(input, output, session) {
- 
-   # ReactiveValues to store advanced parameters
+  
+  # ReactiveValues to store advanced parameters
   advanced_params <- reactiveValues(
     fiber = list(value = NA, comparison = "<"),
     protein = list(value = NA, comparison = "<"),
@@ -510,6 +524,30 @@ server <- function(input, output, session) {
         datatable(updated_data) %>%
           formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4)
       })
+      
+      output$plotConformity <- renderPlot({
+        
+     plotTable <- updated_data %>% filter(ConformityScore >= 90 ) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
+     
+     ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
+       geom_bar(stat = "identity") +
+       geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits whole menu")), 
+                 vjust = 0.5, size = 13/.pt) +
+       labs(x = "Company",
+            y = "Count") +
+       theme_classic() +
+       theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
+             axis.text.y = element_text(size = 14,face = "italic"),
+             axis.title = element_text(size = 12, face="bold"),
+             plot.title = element_text(face = "bold", size = 18),
+             legend.title = element_text(size = 14, face="bold"),
+             legend.text = element_text(size = 13, face="italic")) +  
+       ggtitle(paste("Best Conforming,>=90, Item Count by each Company to ", input$diet_type, " Diet"))
+      })
+        
+      
+      
+      
     }
     
     if(!(input$protein_constant + input$carbs_constant +input$fat_constant ==1)){
@@ -517,8 +555,10 @@ server <- function(input, output, session) {
       updateNumericInput(session, "carbs_constant", value = 0.35)
       updateNumericInput(session, "fat_constant", value = 0.35)
       
-       ###############################Continuee
+      ###############################Continuee
     }
+    
+    
     
     
   })
@@ -538,7 +578,10 @@ server <- function(input, output, session) {
     updateNumericInput(session, "fiber_max", value = NA)
     updateNumericInput(session, "sugar_max", value = NA)
     updateNumericInput(session, "cholesterol_max", value = NA)
+    updateSliderTextInput(session, "conformity_range", selected = 90)
   })
+  
+  
   
   
 }
