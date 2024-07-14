@@ -527,7 +527,24 @@ server <- function(input, output, session) {
       
       output$plotConformity <- renderPlot({
         
-        plotTable <- updated_data %>% filter(ConformityScore >= 90 ) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
+        #menu count per company
+        McD_menuCount <- macros %>% filter(.$Company == "McDonald’s") %>% count() %>% pull()  %>% as.numeric()
+        KFC_menuCount <- macros %>% filter(.$Company == "KFC") %>% count() %>% pull() %>% as.numeric()
+        BK_menuCount <- macros %>% filter(.$Company == "Burger King") %>% count() %>% pull() %>% as.numeric()
+        Wendys_menuCount <- macros %>% filter(.$Company == "Wendy’s") %>% count() %>% pull() %>% as.numeric()
+        TB_menuCount <- macros %>% filter(.$Company == "Taco Bell") %>% count() %>% pull() %>% as.numeric()
+        PH_menuCount <- macros %>% filter(.$Company == "Pizza Hut") %>% count() %>% pull() %>% as.numeric()
+        
+        menu_counts <- c(
+          "McDonald’s" = McD_menuCount,
+          "KFC" = KFC_menuCount,
+          "Burger King" = BK_menuCount,
+          "Wendy’s" = Wendys_menuCount,
+          "Taco Bell" = TB_menuCount,
+          "Pizza Hut" = PH_menuCount
+        )
+        
+        plotTable <- updated_data %>% filter(ConformityScore >= input$conformity_range) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
         
         ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
           geom_bar(stat = "identity") +
@@ -542,7 +559,7 @@ server <- function(input, output, session) {
                 plot.title = element_text(face = "bold", size = 18),
                 legend.title = element_text(size = 14, face="bold"),
                 legend.text = element_text(size = 13, face="italic")) +  
-          ggtitle(paste("Best Conforming,>=90, Item Count by each Company to ", input$diet_type, " Diet"))
+          ggtitle(paste("Best Conforming, with a",input$conformity_range,">= Conformity Score, \nItem Count by each Company to ", input$diet_type, " Diet"))
       })
       
       
