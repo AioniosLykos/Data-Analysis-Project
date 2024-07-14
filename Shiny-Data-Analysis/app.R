@@ -264,7 +264,7 @@ ui <- fluidPage(
                       ),
                       tabPanel("Graphs",
                                plotOutput("plotConformity", height = "500px", width = "650px")
-                        
+                               
                       )
                     )
         )
@@ -527,24 +527,24 @@ server <- function(input, output, session) {
       
       output$plotConformity <- renderPlot({
         
-     plotTable <- updated_data %>% filter(ConformityScore >= 90 ) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
-     
-     ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
-       geom_bar(stat = "identity") +
-       geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits whole menu")), 
-                 vjust = 0.5, size = 13/.pt) +
-       labs(x = "Company",
-            y = "Count") +
-       theme_classic() +
-       theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
-             axis.text.y = element_text(size = 14,face = "italic"),
-             axis.title = element_text(size = 12, face="bold"),
-             plot.title = element_text(face = "bold", size = 18),
-             legend.title = element_text(size = 14, face="bold"),
-             legend.text = element_text(size = 13, face="italic")) +  
-       ggtitle(paste("Best Conforming,>=90, Item Count by each Company to ", input$diet_type, " Diet"))
-      })
+        plotTable <- updated_data %>% filter(ConformityScore >= 90 ) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
         
+        ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
+          geom_bar(stat = "identity") +
+          geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits whole menu")), 
+                    vjust = 0.5, size = 13/.pt) +
+          labs(x = "Company",
+               y = "Count") +
+          theme_classic() +
+          theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
+                axis.text.y = element_text(size = 14,face = "italic"),
+                axis.title = element_text(size = 12, face="bold"),
+                plot.title = element_text(face = "bold", size = 18),
+                legend.title = element_text(size = 14, face="bold"),
+                legend.text = element_text(size = 13, face="italic")) +  
+          ggtitle(paste("Best Conforming,>=90, Item Count by each Company to ", input$diet_type, " Diet"))
+      })
+      
       
       
       
