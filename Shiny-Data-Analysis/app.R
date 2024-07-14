@@ -129,33 +129,7 @@ ui <- fluidPage(
                  # Two-sided interval for calorie budget
                  sliderInput("calorie_budget", "Calorie Budget:",
                              min = 0, max = 1500, value = c(300, 700),
-                             step = 25, sep = "")
-        ),
-        tabPanel("Advanced Parameters",
-                 h3("Advanced Options for Tailored Results"),
-                 div(
-                   style = "display: flex; justify-content: right;",  # Center align the content horizontally
-                   div(
-                     style = "margin-right: 0px;",  # Adjust margin-right to create space
-                     actionButton("reset", "Reset Parameters")
-                   )
-                 ),
-                 h4("The following parameters are used in Conformity Score calculations and must sum up to 1."),
-                 tags$div(
-                   style = "font-size: 10px;",  # Adjust the font size as needed
-                   h5("While macros mainly determine the conformity of a food item, these parameters let you favor one or more macros over others.")
-                 ),
-                 fluidRow(
-                   column(4,
-                          numericInput("protein_constant", HTML("Protein Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from proteins in your diet.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%")
-                   ),
-                   column(4,
-                          numericInput("carbs_constant", HTML("Carbs Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from carbs in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
-                   ),
-                   column(4,
-                          numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from fat in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
-                   )
-                 ),
+                             step = 25, sep = ""),
                  
                  # Optional advanced parameters for fiber, protein, sugar, and cholesterol
                  h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed meaning both endpoints are included.\n If only one of the endpoints has an input, the filter will show values > min  or values < max for that parameter.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%" ),
@@ -184,6 +158,33 @@ ui <- fluidPage(
                    width = "100%",
                    post = ""
                  )  
+        ),
+        tabPanel("Advanced Parameters",
+                 h3("Advanced Options for Tailored Results"),
+                 div(
+                   style = "display: flex; justify-content: right;",  # Center align the content horizontally
+                   div(
+                     style = "margin-right: 0px;",  # Adjust margin-right to create space
+                     actionButton("reset", "Reset Parameters")
+                   )
+                 ),
+                 h4("The following parameters are used in Conformity Score calculations and must sum up to 1."),
+                 tags$div(
+                   style = "font-size: 10px;",  # Adjust the font size as needed
+                   h5("While macros mainly determine the conformity of a food item, these parameters let you favor one or more macros over others.")
+                 ),
+                 fluidRow(
+                   column(4,
+                          numericInput("protein_constant", HTML("Protein Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from proteins in your diet.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%")
+                   ),
+                   column(4,
+                          numericInput("carbs_constant", HTML("Carbs Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from carbs in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+                   ),
+                   column(4,
+                          numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from fat in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
+                   )
+                 )
+                
                  
         )
       ), 
@@ -404,6 +405,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "diet_type", choices = updated_choices)
   })
   
+  
+  
   # Initial update of selectInput "diet_type"
   observe({
     updateSelectInput(session, "diet_type", choices = diet_types())
@@ -416,6 +419,7 @@ server <- function(input, output, session) {
     selected_diet_type <- input$diet_type
     calorie_budget_min <- input$calorie_budget[1]
     calorie_budget_max <- input$calorie_budget[2]
+   
     
     advanced_params$fiber$value <- input$preferred_fiber
     advanced_params$fiber$comparison <- input$fiber_max
@@ -425,6 +429,9 @@ server <- function(input, output, session) {
     advanced_params$sugar$comparison <- input$sugar_max
     advanced_params$cholesterol$value <- input$preferred_cholesterol
     advanced_params$cholesterol$comparison <- input$cholesterol_max
+    
+    conformity <- input$conformity_range
+    diet <- input$diet_type
     
     if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
       diet_data <- dietTable() %>%
@@ -544,7 +551,7 @@ server <- function(input, output, session) {
           "Pizza Hut" = PH_menuCount
         )
         
-        plotTable <- updated_data %>% filter(ConformityScore >= input$conformity_range) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
+        plotTable <- updated_data %>% filter(ConformityScore >= conformity) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
         
         ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
           geom_bar(stat = "identity") +
@@ -559,24 +566,19 @@ server <- function(input, output, session) {
                 plot.title = element_text(face = "bold", size = 18),
                 legend.title = element_text(size = 14, face="bold"),
                 legend.text = element_text(size = 13, face="italic")) +  
-          ggtitle(paste("Best Conforming, with a",input$conformity_range,">= Conformity Score, \nItem Count by each Company to ", input$diet_type, " Diet"))
+          ggtitle(paste("Best Conforming, with a",conformity,">= Conformity Score, \nItem Count by each Company to ", diet, " Diet"))
       })
-      
-      
-      
       
     }
     
+    
     if(!(input$protein_constant + input$carbs_constant +input$fat_constant ==1)){
+      
       updateNumericInput(session, "protein_constant", value = 0.3)
       updateNumericInput(session, "carbs_constant", value = 0.35)
       updateNumericInput(session, "fat_constant", value = 0.35)
       
-      ###############################Continuee
     }
-    
-    
-    
     
   })
   
