@@ -115,7 +115,7 @@ ui <- fluidPage(
       titlePanel(HTML("<span style='font-size: 24px; color: #1E90FF; font-weight: bold; font-family: Roboto, sans-serif;'>Optimizing Fast Food Choices from Top 6 Chains: A Data-Driven Analysis Based on Dietary Types</span>"))
     )
   ),
-   
+  
   sidebarLayout(
     sidebarPanel(
       width = 6,
@@ -129,6 +129,7 @@ ui <- fluidPage(
                  sliderInput("calorie_budget", "Calorie Budget:",
                              min = 0, max = 1500, value = c(300, 700),
                              step = 25, sep = ""),
+                 
                  
                  # Optional advanced parameters for fiber, protein, sugar, and cholesterol
                  h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed meaning both endpoints are included.\n If only one of the endpoints has an input, the filter will show values > min  or values < max for that parameter.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%" ),
@@ -156,10 +157,11 @@ ui <- fluidPage(
                    selected = 90,
                    width = "100%",
                    post = ""
+                   
                  ),
                  
-                 htmlOutput("somethingWrong"),
-        ),
+                 htmlOutput("somethingWrong") )
+        ,
         tabPanel("Advanced Parameters",
                  htmlOutput("warningMessage"),
                  h3("Advanced Options for Tailored Results"),
@@ -472,145 +474,150 @@ server <- function(input, output, session) {
       output$warningMessage <- NULL  # Clear the warning message output if constants are valid
       output$somethingWrong <- NULL
       
-    if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
-      diet_data <- dietTable() %>%
-        filter(Diet_Type == selected_diet_type)
-      if (nrow(diet_data) == 0) {
-        return()
+      if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
+        diet_data <- dietTable() %>%
+          filter(Diet_Type == selected_diet_type)
+        if (nrow(diet_data) == 0) {
+          return()
+        }
+        protein <- diet_data$`Protein %`
+        carbs <- diet_data$`Carbs %`
+        fat <- diet_data$`Fat %`
+      } else {
+        user_macro <- user_macros() %>%
+          filter(Diet_Type == selected_diet_type)
+        if (nrow(user_macro) == 0) {
+          return()
+        }
+        protein <- user_macro$`Protein_Percent`
+        carbs <- user_macro$`Carbs_Percent`
+        fat <- user_macro$`Fat_Percent`
       }
-      protein <- diet_data$`Protein %`
-      carbs <- diet_data$`Carbs %`
-      fat <- diet_data$`Fat %`
-    } else {
-      user_macro <- user_macros() %>%
-        filter(Diet_Type == selected_diet_type)
-      if (nrow(user_macro) == 0) {
-        return()
+      
+      if (!is.null(macros)) {
+        # Apply optional thresholds
+        updated_data <- macros %>%
+          mutate(
+            ConformityScore = 100 - (
+              protein_constant * abs(protein - `Protein%`) +
+                carbs_constant * abs(carbs - `Carbs%`) +
+                fat_constant * abs(fat - `Fat%`)
+            )
+          ) %>%
+          filter(
+            # Filter rows based on protein_max and protein_min
+            if (!is.na(protein_min) && is.na(protein_max)) {
+              (`Protein(g)` >= protein_min) 
+            } else {
+              if (is.na(protein_min) && !is.na(protein_max)) {
+                (`Protein(g)` <= protein_max) 
+              } else {
+                if (!is.na(protein_min) && !is.na(protein_max)) {
+                  ((`Protein(g)` >= protein_min) & (`Protein(g)` <= protein_max))
+                }else {
+                  TRUE  # Include all rows if protein_min and protein_max are NA
+                }
+              } 
+            },
+            # Filter rows based on fiber_max and fiber_min
+            if (!is.na(fiber_min) && is.na(fiber_max)) {
+              (`Fiber(g)` >= input$fiber_min) 
+            } else {
+              if (is.na(fiber_min) && !is.na(fiber_max)) {
+                (`Fiber(g)` <= fiber_max) 
+              } else {
+                if (!is.na(fiber_min) && !is.na(fiber_max)) {
+                  ((`Fiber(g)` >= fiber_min) & (`Fiber(g)` <= fiber_max))
+                }else {
+                  TRUE  # Include all rows if protein_min and protein_max are NA
+                }
+              } 
+            },
+            # Filter rows based on sugar_max and sugar_min
+            if (!is.na(sugar_min) && is.na(sugar_max)) {
+              (`Sugars(g)` >= sugar_min) 
+            } else {
+              if (is.na(sugar_min) && !is.na(sugar_max)) {
+                (`Sugars(g)` <= sugar_max) 
+              } else {
+                if (!is.na(sugar_min) && !is.na(sugar_max)) {
+                  ((`Sugars(g)` >= sugar_min) & (`Sugars(g)` <= sugar_max))
+                }else {
+                  TRUE  # Include all rows if protein_min and protein_max are NA
+                }
+              } 
+            },
+            # Filter rows based on cholesterol_max and cholesterol_min
+            if (!is.na(cholesterol_min) && is.na(cholesterol_max)) {
+              (`Cholesterol(mg)` >= cholesterol_min) 
+            } else {
+              if (is.na(cholesterol_min) && !is.na(cholesterol_max)) {
+                (`Cholesterol(mg)` <= cholesterol_max) 
+              } else {
+                if (!is.na(cholesterol_min) && !is.na(cholesterol_max)) {
+                  ((`Cholesterol(mg)` >= cholesterol_min) & (`Cholesterol(mg)` <= input$cholesterol_max))
+                }else {
+                  TRUE  # Include all rows if protein_min and protein_max are NA
+                }
+              } 
+            },
+            # Filter rows based on calorie budget
+            Calories >= calorie_budget_min,
+            Calories <= calorie_budget_max
+          )      %>%
+          arrange(desc(ConformityScore)) %>%
+          select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`, `Protein(g)`, `Carbs(g)`, `TotalFat(g)`, `Sugars(g)`, `Fiber(g)`, `Cholesterol(mg)`)
+        
+        output$conformityTable <- renderDT({
+          datatable(updated_data) %>%
+            formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4)
+        })
+        
+        output$plotConformity <- renderPlot({
+          
+          #menu count per company
+          McD_menuCount <- macros %>% filter(.$Company == "McDonald’s") %>% count() %>% pull()  %>% as.numeric()
+          KFC_menuCount <- macros %>% filter(.$Company == "KFC") %>% count() %>% pull() %>% as.numeric()
+          BK_menuCount <- macros %>% filter(.$Company == "Burger King") %>% count() %>% pull() %>% as.numeric()
+          Wendys_menuCount <- macros %>% filter(.$Company == "Wendy’s") %>% count() %>% pull() %>% as.numeric()
+          TB_menuCount <- macros %>% filter(.$Company == "Taco Bell") %>% count() %>% pull() %>% as.numeric()
+          PH_menuCount <- macros %>% filter(.$Company == "Pizza Hut") %>% count() %>% pull() %>% as.numeric()
+          
+          menu_counts <- c(
+            "McDonald’s" = McD_menuCount,
+            "KFC" = KFC_menuCount,
+            "Burger King" = BK_menuCount,
+            "Wendy’s" = Wendys_menuCount,
+            "Taco Bell" = TB_menuCount,
+            "Pizza Hut" = PH_menuCount
+          )
+          
+          plotTable <- updated_data %>% filter(ConformityScore >= input$conformity_range) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
+          
+          ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
+            geom_bar(stat = "identity") +
+            geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits whole menu")), 
+                      vjust = 0.5, size = 13/.pt) +
+            labs(x = "Company",
+                 y = "Count") +
+            theme_classic() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
+                  axis.text.y = element_text(size = 14,face = "italic"),
+                  axis.title = element_text(size = 12, face="bold"),
+                  plot.title = element_text(face = "bold", size = 18),
+                  legend.title = element_text(size = 14, face="bold"),
+                  legend.text = element_text(size = 13, face="italic")) +  
+            ggtitle(paste("Best Conforming, with a",input$conformity_range,">= Conformity Score, \nItem Count by each Company to ", input$diet_type, " Diet"))
+        })
+        
       }
-      protein <- user_macro$`Protein_Percent`
-      carbs <- user_macro$`Carbs_Percent`
-      fat <- user_macro$`Fat_Percent`
+      
     }
     
-    if (!is.null(macros)) {
-      # Apply optional thresholds
-      updated_data <- macros %>%
-        mutate(
-          ConformityScore = 100 - (
-            protein_constant * abs(protein - `Protein%`) +
-              carbs_constant * abs(carbs - `Carbs%`) +
-              fat_constant * abs(fat - `Fat%`)
-          )
-        ) %>%
-        filter(
-          # Filter rows based on protein_max and protein_min
-          if (!is.na(protein_min) && is.na(protein_max)) {
-            (`Protein(g)` >= protein_min) 
-          } else {
-            if (is.na(protein_min) && !is.na(protein_max)) {
-              (`Protein(g)` <= protein_max) 
-            } else {
-              if (!is.na(protein_min) && !is.na(protein_max)) {
-                ((`Protein(g)` >= protein_min) & (`Protein(g)` <= protein_max))
-              }else {
-                TRUE  # Include all rows if protein_min and protein_max are NA
-              }
-            } 
-          },
-          # Filter rows based on fiber_max and fiber_min
-          if (!is.na(fiber_min) && is.na(fiber_max)) {
-            (`Fiber(g)` >= input$fiber_min) 
-          } else {
-            if (is.na(fiber_min) && !is.na(fiber_max)) {
-              (`Fiber(g)` <= fiber_max) 
-            } else {
-              if (!is.na(fiber_min) && !is.na(fiber_max)) {
-                ((`Fiber(g)` >= fiber_min) & (`Fiber(g)` <= fiber_max))
-              }else {
-                TRUE  # Include all rows if protein_min and protein_max are NA
-              }
-            } 
-          },
-          # Filter rows based on sugar_max and sugar_min
-          if (!is.na(sugar_min) && is.na(sugar_max)) {
-            (`Sugars(g)` >= sugar_min) 
-          } else {
-            if (is.na(sugar_min) && !is.na(sugar_max)) {
-              (`Sugars(g)` <= sugar_max) 
-            } else {
-              if (!is.na(sugar_min) && !is.na(sugar_max)) {
-                ((`Sugars(g)` >= sugar_min) & (`Sugars(g)` <= sugar_max))
-              }else {
-                TRUE  # Include all rows if protein_min and protein_max are NA
-              }
-            } 
-          },
-          # Filter rows based on cholesterol_max and cholesterol_min
-          if (!is.na(cholesterol_min) && is.na(cholesterol_max)) {
-            (`Cholesterol(mg)` >= cholesterol_min) 
-          } else {
-            if (is.na(cholesterol_min) && !is.na(cholesterol_max)) {
-              (`Cholesterol(mg)` <= cholesterol_max) 
-            } else {
-              if (!is.na(cholesterol_min) && !is.na(cholesterol_max)) {
-                ((`Cholesterol(mg)` >= cholesterol_min) & (`Cholesterol(mg)` <= input$cholesterol_max))
-              }else {
-                TRUE  # Include all rows if protein_min and protein_max are NA
-              }
-            } 
-          },
-          # Filter rows based on calorie budget
-          Calories >= calorie_budget_min,
-          Calories <= calorie_budget_max
-        )      %>%
-        arrange(desc(ConformityScore)) %>%
-        select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`, `Protein(g)`, `Carbs(g)`, `TotalFat(g)`, `Sugars(g)`, `Fiber(g)`, `Cholesterol(mg)`)
-      
-      output$conformityTable <- renderDT({
-        datatable(updated_data) %>%
-          formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4)
-      })
-      
-      output$plotConformity <- renderPlot({
-        
-        #menu count per company
-        McD_menuCount <- macros %>% filter(.$Company == "McDonald’s") %>% count() %>% pull()  %>% as.numeric()
-        KFC_menuCount <- macros %>% filter(.$Company == "KFC") %>% count() %>% pull() %>% as.numeric()
-        BK_menuCount <- macros %>% filter(.$Company == "Burger King") %>% count() %>% pull() %>% as.numeric()
-        Wendys_menuCount <- macros %>% filter(.$Company == "Wendy’s") %>% count() %>% pull() %>% as.numeric()
-        TB_menuCount <- macros %>% filter(.$Company == "Taco Bell") %>% count() %>% pull() %>% as.numeric()
-        PH_menuCount <- macros %>% filter(.$Company == "Pizza Hut") %>% count() %>% pull() %>% as.numeric()
-        
-        menu_counts <- c(
-          "McDonald’s" = McD_menuCount,
-          "KFC" = KFC_menuCount,
-          "Burger King" = BK_menuCount,
-          "Wendy’s" = Wendys_menuCount,
-          "Taco Bell" = TB_menuCount,
-          "Pizza Hut" = PH_menuCount
-        )
-        
-        plotTable <- updated_data %>% filter(ConformityScore >= conformity) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
-        
-        ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
-          geom_bar(stat = "identity") +
-          geom_text(aes(label = paste0(round((n / MenuC) * 100, 2), "% of \nits whole menu")), 
-                    vjust = 0.5, size = 13/.pt) +
-          labs(x = "Company",
-               y = "Count") +
-          theme_classic() +
-          theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
-                axis.text.y = element_text(size = 14,face = "italic"),
-                axis.title = element_text(size = 12, face="bold"),
-                plot.title = element_text(face = "bold", size = 18),
-                legend.title = element_text(size = 14, face="bold"),
-                legend.text = element_text(size = 13, face="italic")) +  
-          ggtitle(paste("Best Conforming, with a",conformity,">= Conformity Score, \nItem Count by each Company to ", diet, " Diet"))
-      })
-      
-    }
-    }
-    })
+  })
+  
+  
+  
   
   observeEvent(input$reset, {
     updateNumericInput(session, "protein_constant", value = 0.3)
