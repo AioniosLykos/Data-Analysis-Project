@@ -115,6 +115,7 @@ ui <- fluidPage(
       titlePanel(HTML("<span style='font-size: 24px; color: #1E90FF; font-weight: bold; font-family: Roboto, sans-serif;'>Optimizing Fast Food Choices from Top 6 Chains: A Data-Driven Analysis Based on Dietary Types</span>"))
     )
   ),
+   
   sidebarLayout(
     sidebarPanel(
       width = 6,
