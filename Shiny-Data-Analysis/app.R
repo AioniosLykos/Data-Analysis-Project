@@ -139,6 +139,14 @@ ui <- fluidPage(
                    column(6, numericInput("protein_max", "Maximum Protein Intake(g):",  NA, min = 0, step = 1)),
                  ), 
                  fluidRow(
+                   column(6, numericInput("carbs_min", "Minimum Carbs Intake(g):", NA, min = 0, step = 1)),
+                   column(6, numericInput("carbs_max", "Maximum Carbs Intake(g):",  NA, min = 0, step = 1)),
+                 ),
+                 fluidRow(
+                   column(6, numericInput("fat_min", "Minimum Fat Intake(g):", NA, min = 0, step = 1)),
+                   column(6, numericInput("fat_max", "Maximum Fat Intake(g):",  NA, min = 0, step = 1)),
+                 ),
+                 fluidRow(
                    column(6, numericInput("fiber_min", "Minimum Fiber Intake(g):", NA, min = 0, step = 1)),
                    column(6, numericInput("fiber_max", "Minimum Fiber Intake(g):",  NA, min = 0, step = 1))
                  ),
@@ -423,12 +431,19 @@ server <- function(input, output, session) {
     protein_constant <- input$protein_constant
     protein_min <- input$protein_min
     protein_max <- input$protein_max
+    carbs_min <- input$carbs_min
+    carbs_max <- input$carbs_max
+    fat_min <- input$fat_min
+    fat_max <- input$fat_max
+    
+    
     fiber_min <- input$fiber_min
     fiber_max <- input$fiber_max
     cholesterol_min <- input$cholesterol_min
     cholesterol_max <- input$cholesterol_max
     sugar_min <- input$sugar_min
     sugar_max <- input$sugar_max
+    
     
     
     selected_diet_type <- input$diet_type
@@ -515,6 +530,33 @@ server <- function(input, output, session) {
               } else {
                 if (!is.na(protein_min) && !is.na(protein_max)) {
                   ((`Protein(g)` >= protein_min) & (`Protein(g)` <= protein_max))
+                }else {
+                  TRUE  # Include all rows if protein_min and protein_max are NA
+                }
+              } 
+            },
+            # Filter rows based on carbs_max and carbs_min
+            if (!is.na(carbs_min) && is.na(carbs_max)) {
+              (`Carbs(g)` >= carbs_min) 
+            } else {
+              if (is.na(carbs_min) && !is.na(carbs_max)) {
+                (`Carbs(g)` <= carbs_max) 
+              } else {
+                if (!is.na(carbs_min) && !is.na(carbs_max)) {
+                  ((`Carbs(g)` >= carbs_min) & (`Carbs(g)` <= carbs_max))
+                }else {
+                  TRUE  # Include all rows if protein_min and protein_max are NA
+                }
+              } 
+            }, # Filter rows based on fat_max and fat_min
+            if (!is.na(fat_min) && is.na(fat_max)) {
+              (`TotalFat(g)` >= fat_min) 
+            } else {
+              if (is.na(fat_min) && !is.na(fat_max)) {
+                (`TotalFat(g)` <= fat_max) 
+              } else {
+                if (!is.na(carbs_min) && !is.na(fat_max)) {
+                  ((`TotalFat(g)` >= fat_min) & (`TotalFat(g)` <= fat_max))
                 }else {
                   TRUE  # Include all rows if protein_min and protein_max are NA
                 }
