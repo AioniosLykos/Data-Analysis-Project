@@ -460,7 +460,8 @@ server <- function(input, output, session) {
       "Cholesterol Max:", cholesterol_max,
       "Sugar Min:", sugar_min,
       "Sugar Max:", sugar_max ,
-      "The condition :", !(abs(protein_constant + carbs_constant + fat_constant - 1) < 1e-10)
+      "The condition :", !(abs(protein_constant + carbs_constant + fat_constant - 1) < 1e-10),
+      "Conformity:", conformity
     ))
     
     if (!(abs(protein_constant + carbs_constant + fat_constant - 1) < 1e-10)) {
@@ -569,8 +570,8 @@ server <- function(input, output, session) {
           select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`, `Protein(g)`, `Carbs(g)`, `TotalFat(g)`, `Sugars(g)`, `Fiber(g)`, `Cholesterol(mg)`)
         
         output$conformityTable <- renderDT({
-          datatable(updated_data) %>%
-            formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 4)
+          datatable(updated_data%>%filter(ConformityScore >= as.numeric(conformity))) %>%
+            formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 1)
         })
         
         output$plotConformity <- renderPlot({
@@ -592,7 +593,7 @@ server <- function(input, output, session) {
             "Pizza Hut" = PH_menuCount
           )
           
-          plotTable <- updated_data %>% filter(ConformityScore >= input$conformity_range) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
+          plotTable <- updated_data %>% filter(ConformityScore >= as.numeric(conformity)) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
           
           ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
             geom_bar(stat = "identity") +
