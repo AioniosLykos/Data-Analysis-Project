@@ -1,5 +1,4 @@
 library(ggplot2)
-library(shiny)
 library(readr)
 library(tidyr)
 library(dplyr)
@@ -119,7 +118,6 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       width = 6,
-      
       tabsetPanel(
         tabPanel("Base parameters", 
                  selectInput("diet_type", "Select Diet Type:",
@@ -157,9 +155,12 @@ ui <- fluidPage(
                    selected = 90,
                    width = "100%",
                    post = ""
-                 )  
+                 ),
+                 
+                 htmlOutput("somethingWrong"),
         ),
         tabPanel("Advanced Parameters",
+                 htmlOutput("warningMessage"),
                  h3("Advanced Options for Tailored Results"),
                  div(
                    style = "display: flex; justify-content: right;",  # Center align the content horizontally
@@ -184,7 +185,7 @@ ui <- fluidPage(
                           numericInput("fat_constant", HTML("Fat Constant: <i class='fas fa-question-circle' data-toggle='tooltip' title='The closer this constant is to 0, the more you prioritize calories from fat in your diet.'></i>"), value = 0.35, min = 0, max = 1, step = 0.01, width = "140%")
                    )
                  )
-                
+                 
                  
         )
       ), 
@@ -268,9 +269,8 @@ ui <- fluidPage(
                                
                       )
                     )
-        )
-        
-      )
+        ) )
+      
     )
   )
 )
@@ -415,11 +415,23 @@ server <- function(input, output, session) {
   # Observe event for confirming choices
   observeEvent(input$confirmChoices, {
     # Check and reset constants if necessary (similar to your existing code)
+    carbs_constant <- input$carbs_constant
+    fat_constant <- input$fat_constant
+    protein_constant <- input$protein_constant
+    protein_min <- input$protein_min
+    protein_max <- input$protein_max
+    fiber_min <- input$fiber_min
+    fiber_max <- input$fiber_max
+    cholesterol_min <- input$cholesterol_min
+    cholesterol_max <- input$cholesterol_max
+    sugar_min <- input$sugar_min
+    sugar_max <- input$sugar_max
+    
     
     selected_diet_type <- input$diet_type
     calorie_budget_min <- input$calorie_budget[1]
     calorie_budget_max <- input$calorie_budget[2]
-   
+    
     
     advanced_params$fiber$value <- input$preferred_fiber
     advanced_params$fiber$comparison <- input$fiber_max
@@ -433,6 +445,32 @@ server <- function(input, output, session) {
     conformity <- input$conformity_range
     diet <- input$diet_type
     
+    print(paste(
+      "Carbs Constant:", carbs_constant,
+      "Fat Constant:", fat_constant,
+      "Protein Constant:", protein_constant,
+      "Protein Min:", protein_min,
+      "Protein Max:", protein_max,
+      "Fiber Min:", fiber_min,
+      "Fiber Max:", fiber_max,
+      "Cholesterol Min:", cholesterol_min,
+      "Cholesterol Max:", cholesterol_max,
+      "Sugar Min:", sugar_min,
+      "Sugar Max:", sugar_max ,
+      "The condition :", !(abs(protein_constant + carbs_constant + fat_constant - 1) < 1e-10)
+    ))
+    
+    if (!(abs(protein_constant + carbs_constant + fat_constant - 1) < 1e-10)) {
+      output$warningMessage <- renderText({
+        "<span style='color: red; font-weight: bold; font-size: 16px;'>The sum of the constants must equal 1. Please adjust or reset the constants.</span>"
+      })
+      output$somethingWrong <- renderText({
+        "<span style='color: red; font-weight: bold; font-size: 16px;'>ERROR IN Advanced Parameters</span>"
+      })
+    } else {
+      output$warningMessage <- NULL  # Clear the warning message output if constants are valid
+      output$somethingWrong <- NULL
+      
     if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
       diet_data <- dietTable() %>%
         filter(Diet_Type == selected_diet_type)
@@ -458,63 +496,63 @@ server <- function(input, output, session) {
       updated_data <- macros %>%
         mutate(
           ConformityScore = 100 - (
-            input$protein_constant * abs(protein - `Protein%`) +
-              input$carbs_constant * abs(carbs - `Carbs%`) +
-              input$fat_constant * abs(fat - `Fat%`)
+            protein_constant * abs(protein - `Protein%`) +
+              carbs_constant * abs(carbs - `Carbs%`) +
+              fat_constant * abs(fat - `Fat%`)
           )
         ) %>%
         filter(
           # Filter rows based on protein_max and protein_min
-          if (!is.na(input$protein_min) && is.na(input$protein_max)) {
-            (`Protein(g)` >= input$protein_min) 
+          if (!is.na(protein_min) && is.na(protein_max)) {
+            (`Protein(g)` >= protein_min) 
           } else {
-            if (is.na(input$protein_min) && !is.na(input$protein_max)) {
-              (`Protein(g)` <= input$protein_max) 
+            if (is.na(protein_min) && !is.na(protein_max)) {
+              (`Protein(g)` <= protein_max) 
             } else {
-              if (!is.na(input$protein_min) && !is.na(input$protein_max)) {
-                ((`Protein(g)` >= input$protein_min) & (`Protein(g)` <= input$protein_max))
+              if (!is.na(protein_min) && !is.na(protein_max)) {
+                ((`Protein(g)` >= protein_min) & (`Protein(g)` <= protein_max))
               }else {
                 TRUE  # Include all rows if protein_min and protein_max are NA
               }
             } 
           },
           # Filter rows based on fiber_max and fiber_min
-          if (!is.na(input$fiber_min) && is.na(input$fiber_max)) {
+          if (!is.na(fiber_min) && is.na(fiber_max)) {
             (`Fiber(g)` >= input$fiber_min) 
           } else {
-            if (is.na(input$fiber_min) && !is.na(input$fiber_max)) {
-              (`Fiber(g)` <= input$fiber_max) 
+            if (is.na(fiber_min) && !is.na(fiber_max)) {
+              (`Fiber(g)` <= fiber_max) 
             } else {
-              if (!is.na(input$fiber_min) && !is.na(input$fiber_max)) {
-                ((`Fiber(g)` >= input$fiber_min) & (`Fiber(g)` <= input$fiber_max))
+              if (!is.na(fiber_min) && !is.na(fiber_max)) {
+                ((`Fiber(g)` >= fiber_min) & (`Fiber(g)` <= fiber_max))
               }else {
                 TRUE  # Include all rows if protein_min and protein_max are NA
               }
             } 
           },
           # Filter rows based on sugar_max and sugar_min
-          if (!is.na(input$sugar_min) && is.na(input$sugar_max)) {
-            (`Sugars(g)` >= input$sugar_min) 
+          if (!is.na(sugar_min) && is.na(sugar_max)) {
+            (`Sugars(g)` >= sugar_min) 
           } else {
-            if (is.na(input$sugar_min) && !is.na(input$sugar_max)) {
-              (`Sugars(g)` <= input$sugar_max) 
+            if (is.na(sugar_min) && !is.na(sugar_max)) {
+              (`Sugars(g)` <= sugar_max) 
             } else {
-              if (!is.na(input$sugar_min) && !is.na(input$sugar_max)) {
-                ((`Sugars(g)` >= input$sugar_min) & (`Sugars(g)` <= input$sugar_max))
+              if (!is.na(sugar_min) && !is.na(sugar_max)) {
+                ((`Sugars(g)` >= sugar_min) & (`Sugars(g)` <= sugar_max))
               }else {
                 TRUE  # Include all rows if protein_min and protein_max are NA
               }
             } 
           },
           # Filter rows based on cholesterol_max and cholesterol_min
-          if (!is.na(input$cholesterol_min) && is.na(input$cholesterol_max)) {
-            (`Cholesterol(mg)` >= input$cholesterol_min) 
+          if (!is.na(cholesterol_min) && is.na(cholesterol_max)) {
+            (`Cholesterol(mg)` >= cholesterol_min) 
           } else {
-            if (is.na(input$cholesterol_min) && !is.na(input$cholesterol_max)) {
-              (`Cholesterol(mg)` <= input$cholesterol_max) 
+            if (is.na(cholesterol_min) && !is.na(cholesterol_max)) {
+              (`Cholesterol(mg)` <= cholesterol_max) 
             } else {
-              if (!is.na(input$cholesterol_min) && !is.na(input$cholesterol_max)) {
-                ((`Cholesterol(mg)` >= input$cholesterol_min) & (`Cholesterol(mg)` <= input$cholesterol_max))
+              if (!is.na(cholesterol_min) && !is.na(cholesterol_max)) {
+                ((`Cholesterol(mg)` >= cholesterol_min) & (`Cholesterol(mg)` <= input$cholesterol_max))
               }else {
                 TRUE  # Include all rows if protein_min and protein_max are NA
               }
@@ -570,18 +608,8 @@ server <- function(input, output, session) {
       })
       
     }
-    
-    
-    if(!(input$protein_constant + input$carbs_constant +input$fat_constant ==1)){
-      
-      updateNumericInput(session, "protein_constant", value = 0.3)
-      updateNumericInput(session, "carbs_constant", value = 0.35)
-      updateNumericInput(session, "fat_constant", value = 0.35)
-      
     }
-    
-  })
-  
+    })
   
   observeEvent(input$reset, {
     updateNumericInput(session, "protein_constant", value = 0.3)
