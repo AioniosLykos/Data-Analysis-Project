@@ -132,7 +132,7 @@ ui <- fluidPage(
                  
                  
                  # Optional advanced parameters for fiber, protein, sugar, and cholesterol
-                 h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed meaning both endpoints are included.\n If only one of the endpoints has an input, the filter will show values > min  or values < max for that parameter.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%" ),
+                 h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed, meaning both endpoints are included. If only one \nendpoint is specified, the filter will show values that are either equal to or \ngreater than the minimum value, or equal to or less than the maximum \nvalue for that parameter.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%" ),
                  
                  fluidRow(
                    column(6, numericInput("protein_min", "Minimum Protein Intake(g):", NA, min = 0, step = 1)),
@@ -401,7 +401,7 @@ server <- function(input, output, session) {
         list(targets = c(1, 2), orderable = FALSE)  # Assuming Company is the first column and Item is the second
       )
     )) %>%
-      formatRound(columns = c("Protein%", "Carbs%", "Fat%"), digits = 4)
+      formatRound(columns = c("Protein%", "Carbs%", "Fat%"), digits = 2)
   })
   
   # Dynamically render selectInput "select_diet_to_delete"
@@ -613,7 +613,7 @@ server <- function(input, output, session) {
         
         output$conformityTable <- renderDT({
           datatable(updated_data%>%filter(ConformityScore >= as.numeric(conformity))) %>%
-            formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 1)
+            formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 2)
         })
         
         output$plotConformity <- renderPlot({
