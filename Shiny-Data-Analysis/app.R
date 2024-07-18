@@ -684,7 +684,7 @@ server <- function(input, output, session) {
                       vjust = -0.1, size = 13/.pt) +
             labs(x = "Company",
                  y = "Conformity Score") +
-            ggtitle(paste0("Conformity Score of Best Item from each Company for ", input$diet_type, " Diet"))+
+            ggtitle(paste0("Conformity Score of Best Item from each Company for ", diet, " Diet"))+
             scale_fill_manual(values = company_colors) +
             theme_classic() +
             theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
@@ -732,7 +732,7 @@ server <- function(input, output, session) {
                   plot.title = element_text(face = "bold", size = 18),
                   legend.title = element_text(size = 14, face="bold"),
                   legend.text = element_text(size = 13, face="italic")) +  
-            ggtitle(paste("Best Conforming, with a",input$conformity_range,">= Conformity Score, \nItem Count by each Company to ", input$diet_type, " Diet"))
+            ggtitle(paste("Best Conforming, with a", conformity,">= Conformity Score, \nItem Count by each Company to ", diet, " Diet"))
         })
         
         # Call the function to plot pie charts
