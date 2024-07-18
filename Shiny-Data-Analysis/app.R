@@ -334,9 +334,9 @@ ui <- fluidPage(
         ), tabPanel("Analysis",
                     tabsetPanel(
                       tabPanel("Conformity Score Table",
-                               DTOutput("conformityTable"),
                                h3("Parameter Dependent Table"),
-                               h5("The updated table will appear once the choices are confirmed.")
+                               h5("The updated table will appear once the choices are confirmed."),
+                               DTOutput("conformityTable")
                       ),
                       tabPanel("Graphs",
                                plotOutput("plotConformity", height = "500px", width = "650px"),
@@ -678,9 +678,26 @@ server <- function(input, output, session) {
           select(Company, Item, ConformityScore, Calories, `Protein%`, `Carbs%`, `Fat%`, `Protein(g)`, `Carbs(g)`, `TotalFat(g)`, `Sugars(g)`, `Fiber(g)`, `Cholesterol(mg)`)
         
         output$conformityTable <- renderDT({
-          datatable(updated_data%>%filter(ConformityScore >= as.numeric(conformity))) %>%
+          datatable(
+            updated_data %>% filter(ConformityScore >= as.numeric(conformity)),
+            options = list(
+              columnDefs = list(
+                list(
+                  targets = 2,  # Adjusts the first column (index 1)
+                  render = JS(
+                    "function(data, type, row, meta) {",
+                    "  return type === 'display' && data.length > 7 ?",
+                    "    '<span title=\"' + data + '\">' + data.substr(0, 7) + '...</span>' : data;",
+                    "}"
+                  )
+                )
+              ),
+              scrollX = TRUE
+            )
+          ) %>%
             formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 2)
         })
+        
         
         output$bestConfTable <- renderPlot({
           dataNew <- updated_data %>% group_by(Company) %>%
@@ -714,7 +731,7 @@ server <- function(input, output, session) {
             top_n(10, ConformityScore) %>%
             ungroup()
           
-          p <- ggplot(dataTop10, aes(x = Company, y = ConformityScore, fill = Company)) +
+          p <- ggplot(dataTop10, aes(x = Company, y = ConformityScore, fill = Company, food= Item)) +
             geom_boxplot() +
             geom_jitter(width = 0.2, alpha = 0.5) + 
             labs(x = "Company", y = "Conformity Score", title = paste("Conformity Score Distribution of Top 10 Items for", diet, "Diet")) +
@@ -728,15 +745,16 @@ server <- function(input, output, session) {
             scale_fill_manual(values = company_colors)+
             scale_y_continuous(breaks = seq(0, 100, by = 2))
           
-          ggplotly(p, tooltip = c("x", "y")) %>% 
+          ggplotly(p, tooltip = c("x", "y","food")) %>% 
             layout(title = paste("Conformity Score Distribution of Top 10 Items for", diet, "Diet"))
+          
         })
         
         output$distributionOfCSbyCompany <- renderPlotly({
           # Get the top 10 items with the highest conformity score for each company
          
           plotlyTable <- updated_data %>% filter(ConformityScore >= as.numeric(conformity))
-          p <- ggplot(plotlyTable, aes(x = Company, y = ConformityScore, fill = Company)) +
+          p <- ggplot(plotlyTable, aes(x = Company, y = ConformityScore, fill = Company, , food = Item)) +
             geom_boxplot() +
             geom_jitter(width = 0.2, alpha = 0.5) + 
             labs(x = "Company", y = "Conformity Score", title = paste("Conformity Score Distribution for", diet, "Diet \nwith Conformity Score greater or equal than " , conformity)) +
@@ -750,7 +768,7 @@ server <- function(input, output, session) {
             scale_fill_manual(values = company_colors)+
             scale_y_continuous(breaks = seq(0, 100, by = 2))
           
-          ggplotly(p, tooltip = c("x", "y")) %>% 
+          ggplotly(p, tooltip = c("x", "y", "food")) %>% 
             layout(title = paste("Conformity Score Distribution for ", diet, "Diet \nwith Conformity Score greater or equal than " , conformity)) 
         })
         
