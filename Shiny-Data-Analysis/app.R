@@ -341,7 +341,9 @@ ui <- fluidPage(
                       tabPanel("Graphs",
                                plotOutput("plotConformity", height = "500px", width = "650px"),
                                plotOutput("bestConfTable", height = "500px", width = "650px"),
-                               uiOutput("plots")
+                               uiOutput("plots"),
+                               plotlyOutput("top10ByCompany", height = "600px", width = "750px"),
+                               plotlyOutput("distributionOfCSbyCompany", height = "600px", width = "750px")
                       )
                     )
         ) )
@@ -702,6 +704,54 @@ server <- function(input, output, session) {
                   legend.title = element_text(size = 14, face="bold"),
                   legend.text = element_text(size = 13, face="italic")) 
            
+        })
+        
+        
+        output$top10ByCompany <- renderPlotly({
+          # Get the top 10 items with the highest conformity score for each company
+          dataTop10 <- updated_data %>%
+            group_by(Company) %>%
+            top_n(10, ConformityScore) %>%
+            ungroup()
+          
+          p <- ggplot(dataTop10, aes(x = Company, y = ConformityScore, fill = Company)) +
+            geom_boxplot() +
+            geom_jitter(width = 0.2, alpha = 0.5) + 
+            labs(x = "Company", y = "Conformity Score", title = paste("Conformity Score Distribution of Top 10 Items for", diet, "Diet")) +
+            theme_classic() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 14, face= "italic"),
+                  axis.text.y = element_text(size = 14, face = "italic"),
+                  axis.title = element_text(size = 12, face = "bold"),
+                  plot.title = element_text(face = "bold", size = 18),
+                  legend.title = element_text(size = 14, face = "bold"),
+                  legend.text = element_text(size = 13, face = "italic")) +
+            scale_fill_manual(values = company_colors)+
+            scale_y_continuous(breaks = seq(0, 100, by = 2))
+          
+          ggplotly(p, tooltip = c("x", "y")) %>% 
+            layout(title = paste("Conformity Score Distribution of Top 10 Items for", diet, "Diet"))
+        })
+        
+        output$distributionOfCSbyCompany <- renderPlotly({
+          # Get the top 10 items with the highest conformity score for each company
+         
+          plotlyTable <- updated_data %>% filter(ConformityScore >= as.numeric(conformity))
+          p <- ggplot(plotlyTable, aes(x = Company, y = ConformityScore, fill = Company)) +
+            geom_boxplot() +
+            geom_jitter(width = 0.2, alpha = 0.5) + 
+            labs(x = "Company", y = "Conformity Score", title = paste("Conformity Score Distribution for", diet, "Diet \nwith Conformity Score greater or equal than " , conformity)) +
+            theme_classic() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 14, face= "italic"),
+                  axis.text.y = element_text(size = 14, face = "italic"),
+                  axis.title = element_text(size = 12, face = "bold"),
+                  plot.title = element_text(face = "bold", size = 18),
+                  legend.title = element_text(size = 14, face = "bold"),
+                  legend.text = element_text(size = 13, face = "italic")) +
+            scale_fill_manual(values = company_colors)+
+            scale_y_continuous(breaks = seq(0, 100, by = 2))
+          
+          ggplotly(p, tooltip = c("x", "y")) %>% 
+            layout(title = paste("Conformity Score Distribution for ", diet, "Diet \nwith Conformity Score greater or equal than " , conformity)) 
         })
         
         output$plotConformity <- renderPlot({
