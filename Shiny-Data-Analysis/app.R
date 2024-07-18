@@ -98,7 +98,57 @@ macros$`Fiber(g)` <- as.numeric(macros$`Fiber(g)`)
 macros$`Sugars(g)` <- as.numeric(macros$`Sugars(g)`)
 macros$`Cholesterol(mg)` <- as.numeric(macros$`Cholesterol(mg)`)
 
+plot_pie_charts <- function(df) {
+  # Get the item with the highest conformity score for each company, breaking ties by Item name
+  best_items <- df %>%
+    group_by(Company) %>%
+    slice_max(order_by = ConformityScore, with_ties = FALSE) %>%
+    ungroup()
+  
+  plots <- list()
+  
+  # Plot pie charts
+  for (i in 1:nrow(best_items)) {
+    row <- best_items[i, ]
+    data <- data.frame(
+      Nutrient = c('Protein(g)', 'Carbs(g)', 'TotalFat(g)'),
+      Grams = c(row$`Protein(g)`, row$`Carbs(g)`, row$`TotalFat(g)`),
+      Percent = c(row$`Protein%`, row$`Carbs%`, row$`Fat%`)
+    )
+    
+    distance_from_center <- 9
+    
+    # Plot
+    p <- ggplot(data, aes(x = "", y = Grams, fill = Nutrient)) +
+      geom_bar(stat = "identity", width = 5) +
+      coord_polar("y", start = 0) +
+      geom_text(aes(label = paste0(Grams, "g\n(", sprintf("%.2f", Percent), "%)")), position = position_stack(vjust = 0.5)) +
+      labs(title = paste(row$Item, "\nThe Best Ranking Item\nfrom", row$Company)) +
+      theme_void() +
+      annotate("text", x = cos(pi/4) * distance_from_center, y = sin(pi/4) * distance_from_center, 
+               label = paste0(
+        "Calories:", row$Calories, "\n",
+        "Sugars(g):", row$`Sugars(g)`, "\n",
+        "Fiber(g):", row$`Fiber(g)`, "\n",
+        "Cholesterol(mg):", row$`Cholesterol(mg)`, "\n"
+      ), hjust = 0, vjust = 1, size = 3.5, color = "black")
+    
+    
+    
+    plots[[i]] <- p
+    
+  }
+  
+  return(plots)
+}
 
+# Define custom colors for each company
+company_colors <- c("Burger King" = "#E41A1C",  # Example color codes
+                    "McDonald’s" = "#fc6ffc",
+                    "Wendy’s" = "#6fd9fc",
+                    "KFC" = "#fc996f",
+                    "Taco Bell" = "#716ffc",
+                    "Pizza Hut" = "#c86ffc")
 
 #Define UI 
 ui <- fluidPage(
@@ -118,9 +168,9 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      width = 6,
+      width = 5,
       tabsetPanel(
-        tabPanel("Base parameters", 
+        tabPanel("Basic", 
                  selectInput("diet_type", "Select Diet Type:",
                              choices = c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"),
                              selected = "Low_Carb"),
@@ -133,30 +183,35 @@ ui <- fluidPage(
                  
                  # Optional advanced parameters for fiber, protein, sugar, and cholesterol
                  h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed, meaning both endpoints are included. If only one \nendpoint is specified, the filter will show values that are either equal to or \ngreater than the minimum value, or equal to or less than the maximum \nvalue for that parameter.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%" ),
-                 
+                 h5("Protein Intake(g)"),
                  fluidRow(
-                   column(6, numericInput("protein_min", "Minimum Protein Intake(g):", NA, min = 0, step = 1)),
-                   column(6, numericInput("protein_max", "Maximum Protein Intake(g):",  NA, min = 0, step = 1)),
+                   column(6, numericInput("protein_min", HTML('<span style="font-weight: normal;">Minimum:</span>'), NA, min = 0, step = 1)),
+                   column(6, numericInput("protein_max", HTML('<span style="font-weight: normal;">Maximum:</span>'),  NA, min = 0, step = 1)),
                  ), 
+                 h5("Carbs Intake(g)"),
                  fluidRow(
-                   column(6, numericInput("carbs_min", "Minimum Carbs Intake(g):", NA, min = 0, step = 1)),
-                   column(6, numericInput("carbs_max", "Maximum Carbs Intake(g):",  NA, min = 0, step = 1)),
+                   column(6, numericInput("carbs_min", HTML('<span style="font-weight: normal;">Minimum:</span>'), NA, min = 0, step = 1)),
+                   column(6, numericInput("carbs_max", HTML('<span style="font-weight: normal;">Maximum:</span>'),  NA, min = 0, step = 1)),
                  ),
+                 h5("Fat Intake(g)"),
                  fluidRow(
-                   column(6, numericInput("fat_min", "Minimum Fat Intake(g):", NA, min = 0, step = 1)),
-                   column(6, numericInput("fat_max", "Maximum Fat Intake(g):",  NA, min = 0, step = 1)),
+                   column(6, numericInput("fat_min", HTML('<span style="font-weight: normal;">Minimum:</span>'), NA, min = 0, step = 1)),
+                   column(6, numericInput("fat_max", HTML('<span style="font-weight: normal;">Maximum:</span>'),  NA, min = 0, step = 1)),
                  ),
+                 h5("Fiber Intake(g)"),
                  fluidRow(
-                   column(6, numericInput("fiber_min", "Minimum Fiber Intake(g):", NA, min = 0, step = 1)),
-                   column(6, numericInput("fiber_max", "Minimum Fiber Intake(g):",  NA, min = 0, step = 1))
+                   column(6, numericInput("fiber_min", HTML('<span style="font-weight: normal;">Minimum:</span>'), NA, min = 0, step = 1)),
+                   column(6, numericInput("fiber_max", HTML('<span style="font-weight: normal;">Maximum:</span>'), NA, min = 0, step = 1))
                  ),
+                 h5("Sugar Intake(g)"),
                  fluidRow(
-                   column(6, numericInput("sugar_min", "Minimum Sugar Intake(g):", NA, min = 0, step = 1)),
-                   column(6, numericInput("sugar_max", "Maximum Sugar Intake(g):",  NA, min = 0, step = 1)),
+                   column(6, numericInput("sugar_min", HTML('<span style="font-weight: normal;">Minimum:</span>'), NA, min = 0, step = 1)),
+                   column(6, numericInput("sugar_max", HTML('<span style="font-weight: normal;">Maximum:</span>'),  NA, min = 0, step = 1)),
                  ),
+                 h5("Cholesterol Intake(mg)"),
                  fluidRow(
-                   column(6, numericInput("cholesterol_min", "Minimum Cholesterol Intake(mg):", NA, min = 0, step = 1)),
-                   column(6, numericInput("cholesterol_max", "Minimum Cholesterol Intake(mg):",  NA, min = 0, step = 1))
+                   column(6, numericInput("cholesterol_min", HTML('<span style="font-weight: normal;">Minimum:</span>'), NA, min = 0, step = 1)),
+                   column(6, numericInput("cholesterol_max", HTML('<span style="font-weight: normal;">Maximum:</span>'),  NA, min = 0, step = 1))
                  ),
                  sliderTextInput(
                    "conformity_range",
@@ -170,7 +225,7 @@ ui <- fluidPage(
                  
                  htmlOutput("somethingWrong") )
         ,
-        tabPanel("Advanced Parameters",
+        tabPanel("Advanced",
                  htmlOutput("warningMessage"),
                  h3("Advanced Options for Tailored Results"),
                  div(
@@ -205,7 +260,7 @@ ui <- fluidPage(
       
     ),
     mainPanel(
-      width = 6,
+      width = 7,
       tabsetPanel(
         tabPanel("Diet",
                  tabsetPanel(
@@ -276,8 +331,9 @@ ui <- fluidPage(
                                h5("The updated table will appear once the choices are confirmed.")
                       ),
                       tabPanel("Graphs",
-                               plotOutput("plotConformity", height = "500px", width = "650px")
-                               
+                               plotOutput("plotConformity", height = "500px", width = "650px"),
+                               plotOutput("bestConfTable", height = "500px", width = "650px"),
+                               uiOutput("plots")
                       )
                     )
         ) )
@@ -616,6 +672,30 @@ server <- function(input, output, session) {
             formatRound(columns = c("Protein%", "Carbs%", "Fat%", "ConformityScore"), digits = 2)
         })
         
+        output$bestConfTable <- renderPlot({
+          dataNew <- updated_data %>% group_by(Company) %>%
+            slice_max(order_by = ConformityScore, with_ties = FALSE) %>%
+            ungroup()
+          
+          
+          ggplot(dataNew, aes(x = Company, y = ConformityScore, fill = Company)) +
+            geom_bar(stat = "identity") +
+            geom_text(aes(label = paste0(sprintf("%.2f", ConformityScore))), 
+                      vjust = -0.1, size = 13/.pt) +
+            labs(x = "Company",
+                 y = "Conformity Score") +
+            ggtitle(paste0("Conformity Score of Best Item from each Company for ", input$diet_type, " Diet"))+
+            scale_fill_manual(values = company_colors) +
+            theme_classic() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
+                  axis.text.y = element_text(size = 14,face = "italic"),
+                  axis.title = element_text(size = 12, face="bold"),
+                  plot.title = element_text(face = "bold", size = 18),
+                  legend.title = element_text(size = 14, face="bold"),
+                  legend.text = element_text(size = 13, face="italic")) 
+           
+        })
+        
         output$plotConformity <- renderPlot({
           
           #menu count per company
@@ -635,6 +715,7 @@ server <- function(input, output, session) {
             "Pizza Hut" = PH_menuCount
           )
           
+          
           plotTable <- updated_data %>% filter(ConformityScore >= as.numeric(conformity)) %>% count(Company) %>% mutate(MenuC = menu_counts[Company])
           
           ggplot(plotTable, aes(x = Company, y = n, fill = Company)) +
@@ -643,6 +724,7 @@ server <- function(input, output, session) {
                       vjust = 0.5, size = 13/.pt) +
             labs(x = "Company",
                  y = "Count") +
+            scale_fill_manual(values = company_colors) +
             theme_classic() +
             theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 14, face= "italic"),
                   axis.text.y = element_text(size = 14,face = "italic"),
@@ -653,6 +735,29 @@ server <- function(input, output, session) {
             ggtitle(paste("Best Conforming, with a",input$conformity_range,">= Conformity Score, \nItem Count by each Company to ", input$diet_type, " Diet"))
         })
         
+        # Call the function to plot pie charts
+        pie_charts <- plot_pie_charts(updated_data)
+        
+        # Render the pie charts in the UI
+  output$plots <- renderUI({
+    plot_output_list <- lapply(1:length(pie_charts), function(i) {
+      plotname <- paste("plot", i, sep = "")
+      plotOutput(plotname, height = 400, width = 400)
+    })
+    do.call(tagList, plot_output_list)
+  })
+  
+  # Render the individual plots
+  for (i in 1:length(pie_charts)) {
+    local({
+      my_i <- i
+      plotname <- paste("plot", my_i, sep = "")
+      output[[plotname]] <- renderPlot({
+        print(pie_charts[[my_i]])
+      })
+    })
+  }
+       
       }
       
     }
