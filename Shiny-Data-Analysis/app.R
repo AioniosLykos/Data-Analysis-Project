@@ -116,6 +116,8 @@ plot_pie_charts <- function(df) {
       Percent = c(row$`Protein%`, row$`Carbs%`, row$`Fat%`)
     )
     
+    custom_colors <- c("Protein(g)" = "#FF6347", "Carbs(g)" = "#FFD700", "TotalFat(g)" = "#32CD32")
+    
     distance_from_center <- 9
     
     # Plot
@@ -123,8 +125,10 @@ plot_pie_charts <- function(df) {
       geom_bar(stat = "identity", width = 5) +
       coord_polar("y", start = 0) +
       geom_text(aes(label = paste0(Grams, "g\n(", sprintf("%.2f", Percent), "%)")), position = position_stack(vjust = 0.5)) +
-      labs(title = paste(row$Item, "\nThe Best Ranking Item\nfrom", row$Company)) +
-      theme_void() +
+      labs(title = paste(row$Item, "\nThe Best Ranking Item from ", row$Company)) +
+      theme_void()+
+      scale_fill_manual(values = custom_colors) +
+      theme(plot.title = element_text(face = "bold", size = 14)) + 
       annotate("text", x = cos(pi/4) * distance_from_center, y = sin(pi/4) * distance_from_center, 
                label = paste0(
         "Calories:", row$Calories, "\n",
@@ -168,9 +172,11 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      width = 5,
+      width = 3,
       tabsetPanel(
         tabPanel("Basic", 
+                 h3("Basic Parameters and Filters"),
+
                  selectInput("diet_type", "Select Diet Type:",
                              choices = c("Low_Carb", "Low_Fat", "Balanced1", "Balanced2", "High_Carb"),
                              selected = "Low_Carb"),
@@ -180,9 +186,11 @@ ui <- fluidPage(
                              min = 0, max = 1500, value = c(300, 700),
                              step = 25, sep = ""),
                  
-                 
                  # Optional advanced parameters for fiber, protein, sugar, and cholesterol
-                 h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed, meaning both endpoints are included. If only one \nendpoint is specified, the filter will show values that are either equal to or \ngreater than the minimum value, or equal to or less than the maximum \nvalue for that parameter.'></i>"), value = 0.30, min = 0, max = 1, step = 0.01, width = "140%" ),
+                 fluidRow(
+                   column(8,  h4( HTML("Specify filter choices <i class='fas fa-question-circle' data-toggle='tooltip' title=' The intervals are closed, meaning both endpoints are included. If only one \nendpoint is specified, the filter will show values that are either equal to or \ngreater than the minimum value, or equal to or less than the maximum \nvalue for that parameter.'></i>"))),
+                   column(4, actionButton("resetBasic", "Reset")),
+                 ),
                  h5("Protein Intake(g)"),
                  fluidRow(
                    column(6, numericInput("protein_min", HTML('<span style="font-weight: normal;">Minimum:</span>'), NA, min = 0, step = 1)),
@@ -232,7 +240,7 @@ ui <- fluidPage(
                    style = "display: flex; justify-content: right;",  # Center align the content horizontally
                    div(
                      style = "margin-right: 0px;",  # Adjust margin-right to create space
-                     actionButton("reset", "Reset Parameters")
+                     actionButton("reset", "Reset Constants")
                    )
                  ),
                  h4("The following parameters are used in Conformity Score calculations and must sum up to 1."),
@@ -260,7 +268,7 @@ ui <- fluidPage(
       
     ),
     mainPanel(
-      width = 7,
+      width = 9,
       tabsetPanel(
         tabPanel("Diet",
                  tabsetPanel(
@@ -771,6 +779,10 @@ server <- function(input, output, session) {
     updateNumericInput(session, "protein_constant", value = 0.3)
     updateNumericInput(session, "carbs_constant", value = 0.35)
     updateNumericInput(session, "fat_constant", value = 0.35)
+    
+  })
+  
+  observeEvent(input$resetBasic, {
     
     updateNumericInput(session, "protein_min", value = NA)
     updateNumericInput(session, "fiber_min", value = NA)
