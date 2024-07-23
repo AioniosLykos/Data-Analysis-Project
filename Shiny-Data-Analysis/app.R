@@ -355,16 +355,6 @@ ui <- fluidPage(
 # Define server logic
 server <- function(input, output, session) {
   
-  # ReactiveValues to store advanced parameters
-  advanced_params <- reactiveValues(
-    fiber = list(value = NA, comparison = "<"),
-    protein = list(value = NA, comparison = "<"),
-    sugar = list(value = NA, comparison = "<"),
-    cholesterol = list(value = NA, comparison = "<")
-  )
-  
-  
-  
   # Reactive expression for cleaned data
   cleaned_data <- reactive({
     clean_data(FFdata_original)
@@ -515,16 +505,6 @@ server <- function(input, output, session) {
     selected_diet_type <- input$diet_type
     calorie_budget_min <- input$calorie_budget[1]
     calorie_budget_max <- input$calorie_budget[2]
-    
-    
-    advanced_params$fiber$value <- input$preferred_fiber
-    advanced_params$fiber$comparison <- input$fiber_max
-    advanced_params$protein$value <- input$preferred_protein
-    advanced_params$protein$comparison <- input$protein_max
-    advanced_params$sugar$value <- input$preferred_sugar
-    advanced_params$sugar$comparison <- input$sugar_max
-    advanced_params$cholesterol$value <- input$preferred_cholesterol
-    advanced_params$cholesterol$comparison <- input$cholesterol_max
     
     conformity <- input$conformity_range
     diet <- input$diet_type
