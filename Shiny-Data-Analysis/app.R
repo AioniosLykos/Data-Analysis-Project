@@ -716,6 +716,8 @@ server <- function(input, output, session) {
             top_n(10, ConformityScore) %>%
             ungroup()
           
+          if (nrow(dataTop10) != 0 ) {
+          
           p <- ggplot(dataTop10, aes(x = Company, y = ConformityScore, fill = Company, food= Item)) +
             geom_boxplot() +
             geom_jitter(width = 0.2, alpha = 0.5) + 
@@ -732,7 +734,9 @@ server <- function(input, output, session) {
           
           ggplotly(p, tooltip = c("x", "y","food")) %>% 
             layout(title = paste("Conformity Score Distribution of Top 10 Items for", diet, "Diet"))
-          
+          }else {
+            NULL
+          }
         })
         
         output$distributionOfCSbyCompany <- renderPlotly({
