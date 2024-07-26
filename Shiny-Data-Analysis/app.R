@@ -108,6 +108,12 @@ plot_pie_charts <- function(df) {
   plots <- list()
   
   # Plot pie charts
+  if (nrow(best_items) == 0) {
+    
+    return(NULL)
+  }else{
+    
+  
   for (i in 1:nrow(best_items)) {
     row <- best_items[i, ]
     data <- data.frame(
@@ -144,7 +150,7 @@ plot_pie_charts <- function(df) {
   }
   
   return(plots)
-}
+}}
 
 # Define custom colors for each company
 company_colors <- c("Burger King" = "#E41A1C",  # Example color codes
@@ -734,7 +740,7 @@ server <- function(input, output, session) {
           # Get the top 10 items with the highest conformity score for each company
          
           plotlyTable <- updated_data %>% filter(ConformityScore >= as.numeric(conformity))
-          p <- ggplot(plotlyTable, aes(x = Company, y = ConformityScore, fill = Company, , food = Item)) +
+          p <- ggplot(plotlyTable, aes(x = Company, y = ConformityScore, fill = Company, food = Item)) +
             geom_boxplot() +
             geom_jitter(width = 0.2, alpha = 0.5) + 
             labs(x = "Company", y = "Conformity Score", title = paste("Conformity Score Distribution for", diet, "Diet \nwith Conformity Score greater or equal than " , conformity)) +
