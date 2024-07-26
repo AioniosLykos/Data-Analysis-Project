@@ -109,7 +109,6 @@ plot_pie_charts <- function(df) {
   
   # Plot pie charts
   if (nrow(best_items) == 0) {
-    
     return(NULL)
   }else{
     
@@ -740,6 +739,9 @@ server <- function(input, output, session) {
           # Get the top 10 items with the highest conformity score for each company
          
           plotlyTable <- updated_data %>% filter(ConformityScore >= as.numeric(conformity))
+          if (nrow(plotlyTable) != 0 ) {
+          
+       
           p <- ggplot(plotlyTable, aes(x = Company, y = ConformityScore, fill = Company, food = Item)) +
             geom_boxplot() +
             geom_jitter(width = 0.2, alpha = 0.5) + 
@@ -756,7 +758,13 @@ server <- function(input, output, session) {
           
           ggplotly(p, tooltip = c("x", "y", "food")) %>% 
             layout(title = paste("Conformity Score Distribution for ", diet, "Diet \nwith Conformity Score greater or equal than " , conformity)) 
-        })
+        
+          }else {
+            
+            NULL
+          } 
+          
+          })
         
         output$plotConformity <- renderPlot({
           
