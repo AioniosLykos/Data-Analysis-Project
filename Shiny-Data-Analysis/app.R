@@ -16,9 +16,9 @@ library(shiny)
 library(shinyBS)
 library(shinyWidgets)
 
-
-FFdata_original <- read_delim("~/AnalysisProject/FastFoodNutritionMenuV3.csv")
-diet_original <- read_delim("~/AnalysisProject/Diet.csv")
+getwd()
+FFdata_original <- read_delim("C:/Users/Spirit/Documents/GitHub/Data-Analysis-Project/FastFoodNutritionMenuV3.csv")
+diet_original <- read_delim("C:/Users/Spirit/Documents/GitHub/Data-Analysis-Project/Diet.csv")
 
 calorieMinBudget <- 300
 calorieIntervalDiff <- 200
@@ -356,7 +356,7 @@ ui <- fluidPage(
     )
   )
 )
-
+analysis_data <- reactiveVal(NULL)
 # Define server logic
 server <- function(input, output, session) {
   
@@ -861,9 +861,6 @@ server <- function(input, output, session) {
     updateNumericInput(session, "cholesterol_max", value = NA)
     updateSliderTextInput(session, "conformity_range", selected = 90)
   })
-  
-  
-  
   
 }
 
