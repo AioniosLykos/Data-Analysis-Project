@@ -188,3 +188,12 @@ The application identifies which menu items and restaurants best satisfy the use
 The objective of this project is to demonstrate how data analysis, nutritional science, and interactive visualization can be combined to support healthier decision-making in fast-food environments.
 
 The project emphasizes practical data cleaning, feature engineering, scoring methodologies, and interactive analytics while addressing a real-world consumer problem.
+## Final Insights 
+
+Analysis of macro-level nutritional profiles suggests that Wendy’s menu items are, on average, more closely aligned with balanced dietary targets compared to McDonald’s and other fast food chains, based on the Conformity Score distribution across items.
+
+In contrast, McDonald’s exhibits a higher concentration of high-carbohydrate, energy-dense items, particularly within frequently selected categories. This broader menu distribution may increase the likelihood of users selecting suboptimal options when aiming for balanced dietary choices.
+
+Additionally, the greater variability and density of high-carb options at McDonald’s may introduce increased decision complexity, which could indirectly influence selection behavior toward less optimal nutritional outcomes.
+
+These findings highlight that menu composition—not just individual item quality—plays an important role in dietary decision support.
