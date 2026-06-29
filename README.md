@@ -1,66 +1,190 @@
-# Data-Analysis-Project
-**Overview**
+# Fast Food Nutritional Recommender
 
-Analysis on a public dataset: Nutritional values, including Calories and Micro-nutrients from six of the largest and most popular fast food restaurants:
+## Overview
 
--McDonald's
+Fast Food Nutritional Recommender is an interactive data-driven application that helps users identify fast food menu items that best align with their dietary goals and nutritional constraints.
 
--Burger King
+The application analyzes menu items from major fast-food chains and ranks them using a custom **Conformity Score**, which measures how closely each item matches a selected diet profile based on macronutrient distribution.
 
--Wendy's
+Rather than focusing solely on calories, the system evaluates protein, carbohydrate, and fat composition while allowing users to apply additional nutritional constraints such as fiber, sugar, cholesterol, and calorie limits.
 
--Kentucky Fried Chicken (KFC)
+---
 
--Taco Bell
+## Key Features
 
--Pizza Hut
+### Personalized Diet Matching
 
-		
+* Select from predefined diet plans:
 
-**Dataset**
+  * Low Carb
+  * Low Fat
+  * Balanced
+  * High Carb
 
-The dataset used in this analysis is taken from [Kaggle.](https://www.kaggle.com/datasets/joebeachcapital/fast-food/data)
+* Create custom diets by specifying:
 
+  * Protein %
+  * Carbohydrate %
+  * Fat %
 
+### Conformity Score Engine
 
-**Analysis Assumptions**
+A custom scoring algorithm ranks menu items according to how closely their macronutrient composition matches a target diet profile.
 
--Protein is 4 calories per gram.
+Users can:
 
--Fat is 9 calories per gram.
+* Adjust macro importance weights
+* Compare restaurants
+* Identify top-performing menu items
+* Filter results by minimum conformity score
 
--Carbohydrates are 4 calories per gram.
+### Nutritional Filtering
 
--Fiber is 2 calories per gram.
+Filter menu items using:
 
--Fiber, being a type of carbohydrate that the human body can't digest, should not be included in the calorie intake.
+* Calories
+* Protein
+* Carbohydrates
+* Fat
+* Fiber
+* Sugar
+* Cholesterol
 
+### Interactive Data Visualization
 
+The application provides:
 
-**Objective**
+* Restaurant comparison charts
+* Distribution analysis of menu items
+* Top-performing item rankings
+* Nutritional composition pie charts
+* Interactive Plotly visualizations
 
-Every individual's diet looks different. Some might have dietary restrictions that cannot be analyzed in this project. The aim is to answer the following question:
+---
 
--**How do we make _better choices_ when it comes to fast food?**
+## Dataset
 
+The analysis is based on publicly available nutritional information from six major fast-food chains:
 
+* McDonald's
+* Burger King
+* Wendy's
+* KFC
+* Taco Bell
+* Pizza Hut
 
-**Methodology**
+The original dataset was obtained from Kaggle and underwent extensive cleaning and normalization before analysis.
 
--Answer the above question given the fat, protein, and carbohydrate percentages of an individual's diet plan.
+---
 
--Individual differences such as age, height, weight, and fitness goals (gaining or losing weight) are not considered.
+## Data Processing Pipeline
 
--Use a calorie budget for a cheat meal (upper limit).
+### Data Cleaning
 
-Example: For a person with a calorie budget of 700 calories for a cheat meal, what (where is implied) should they choose to eat?
+* Missing value handling
+* Duplicate removal
+* Invalid nutritional value filtering
+* Data type conversion
+* Column normalization
 
-This budget can be set depending on the person's goals and situation.
+### Nutritional Calculations
 
--Analyze different calorie budget groups to make this inclusive of different types of people (men, women, old, young) and their goals (losing body fat, gaining body fat, maintaining).
+Calorie contributions are calculated using standard nutritional assumptions:
 
+* Protein = 4 kcal/g
+* Carbohydrates = 4 kcal/g
+* Fat = 9 kcal/g
+* Fiber = 2 kcal/g
 
+For each menu item, the system computes:
 
-**Note**
+* Total calories from macros
+* Percentage of calories from protein
+* Percentage of calories from carbohydrates
+* Percentage of calories from fat
 
-Some values of certain items may have changed since this data was collected. These changes have been verified.
+---
+
+## Conformity Score Methodology
+
+The Conformity Score measures how closely a menu item aligns with a target dietary profile.
+
+The score is based on weighted differences between:
+
+* Target Protein %
+* Target Carbohydrate %
+* Target Fat %
+
+and
+
+* Actual Protein %
+* Actual Carbohydrate %
+* Actual Fat %
+
+Higher scores indicate better alignment with the selected diet.
+
+This approach allows users to move beyond simple calorie counting and evaluate food choices based on overall nutritional quality and dietary objectives.
+
+---
+
+## Technologies Used
+
+### Data Analysis
+
+* R
+* dplyr
+* tidyr
+* readr
+
+### Data Visualization
+
+* ggplot2
+* plotly
+* patchwork
+
+### Web Application Development
+
+* Shiny
+* DT
+* shinyWidgets
+* shinyBS
+
+### Data Processing
+
+* Data Cleaning
+* Feature Engineering
+* Nutritional Analytics
+
+---
+
+## Example Use Case
+
+A user following a low-carbohydrate diet with a 700-calorie meal budget can:
+
+1. Select the Low Carb diet profile.
+2. Set a calorie range.
+3. Specify additional nutritional constraints.
+4. Generate ranked menu recommendations.
+5. Compare fast-food chains based on nutritional compatibility.
+
+The application identifies which menu items and restaurants best satisfy the user's dietary goals.
+
+---
+
+## Future Improvements
+
+* Real-time menu data integration
+* Mobile application deployment
+* Restaurant location services
+* Machine learning-based recommendation systems
+* Personalized user profiles
+* Meal recommendation history
+* AI-powered nutritional assistant
+
+---
+
+## Project Goal
+
+The objective of this project is to demonstrate how data analysis, nutritional science, and interactive visualization can be combined to support healthier decision-making in fast-food environments.
+
+The project emphasizes practical data cleaning, feature engineering, scoring methodologies, and interactive analytics while addressing a real-world consumer problem.
