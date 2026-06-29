@@ -487,6 +487,8 @@ server <- function(input, output, session) {
   # Observe event for confirming choices
   observeEvent(input$confirmChoices, {
     # Check and reset constants if necessary (similar to your existing code)
+    print("BUTTON CLICKED")
+    
     carbs_constant <- input$carbs_constant
     fat_constant <- input$fat_constant
     protein_constant <- input$protein_constant
@@ -529,7 +531,6 @@ server <- function(input, output, session) {
       "The condition :", !(abs(protein_constant + carbs_constant + fat_constant - 1) < 1e-10),
       "Conformity:", conformity
     ))
-    
     if (!(abs(protein_constant + carbs_constant + fat_constant - 1) < 1e-10)) {
       output$warningMessage <- renderText({
         "<span style='color: red; font-weight: bold; font-size: 16px;'>The sum of the constants must equal 1. Please adjust or reset the constants.</span>"
@@ -540,6 +541,12 @@ server <- function(input, output, session) {
     } else {
       output$warningMessage <- NULL  # Clear the warning message output if constants are valid
       output$somethingWrong <- NULL
+      
+      print(selected_diet_type)
+      
+      print(names(dietTable()))
+      
+      print(unique(dietTable()$Diet_Type))
       
       if (!(selected_diet_type %in% user_macros()$Diet_Type)) {
         diet_data <- dietTable() %>%
@@ -560,6 +567,7 @@ server <- function(input, output, session) {
         carbs <- user_macro$`Carbs_Percent`
         fat <- user_macro$`Fat_Percent`
       }
+      
       
       if (!is.null(macros)) {
         # Apply optional thresholds
